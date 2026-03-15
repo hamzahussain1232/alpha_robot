@@ -1,52 +1,46 @@
+import os
 from launch import LaunchDescription
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
-from launch.actions import DeclareLaunchArgument, LogInfo, IncludeLaunchDescription, TimerAction, GroupAction, RegisterEventHandler
+from launch.actions import DeclareLaunchArgument, LogInfo, IncludeLaunchDescription, RegisterEventHandler, TimerAction
+from launch.substitutions import LaunchConfiguration, Command, PathJoinSubstitution
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.event_handlers import OnProcessStart
 from launch_ros.actions import Node
+from launch_ros.descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
-
-#
-# Generate launch description for a typical differential drive robot drive system
-#
-# This includes controller manager and necessary controllers:
-# - twist mux for cmd_vel arbitration
-# - controller manager,
-# - diff drive,
-# - joint state broadcaster,
-# - battery state broadcaster
-#
-# Use example (see seggy.drive.launch.py):
-# drive_launch_path = PathJoinSubstitution([FindPackageShare(package_name), 'launch', 'drive.launch.py'])
-# drive_launch = IncludeLaunchDescription(
-#     PythonLaunchDescriptionSource(drive_launch_path),
-#     launch_arguments={
-#         'namespace': namespace,
-#         'use_sim_time': use_sim_time,
-#         'robot_model': robot_model
-#     }.items(),
-#     condition=UnlessCondition(use_sim_time)
-# )
 
 def generate_launch_description():
 
-    package_name='articubot_one'
+    package_name = 'articubot_one'
 
-    # Accept namespace from parent launch or use empty default
-    namespace = LaunchConfiguration('namespace', default='')
-
-    # Check if we're told to use sim time
+    # ARGS
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
 
-    # Robot specific files reside under "robots" directory - sim, dragger, plucky, seggy, turtle...
-    robot_model = LaunchConfiguration('robot_model', default='')
+    # 1. PROCESS THE URDF (Robot Description)
+    # This converts the Xacro file into a raw XML format that the robot can understand
+    xacro_file = PathJoinSubstitution([FindPackageShare(package_name), 'description', 'robot.urdf.xacro'])
+    
+    # We pass 'sim_mode:=false' because this is the real robot launch file
+    robot_description_content = Command(['xacro ', xacro_file, ' sim_mode:=', use_sim_time])
+    
+    robot_description = {
+        'robot_description': ParameterValue(robot_description_content, value_type=str)
+    }
 
-    # Build substitution-based paths so robot_model can be used at launch-time
-    controllers_params_file_sub = PathJoinSubstitution([
-        FindPackageShare(package_name), 'robots', robot_model, 'config', 'controllers.yaml'
+    # 2. CONTROLLER CONFIGURATION
+    controllers_params_file = PathJoinSubstitution([
+        FindPackageShare(package_name), 'config', 'my_controllers_hardware.yaml'
     ])
 
-    # Include twist_mux for command velocity arbitration
+    # 3. LAUNCH RSP (Robot State Publisher)
+    # This node publishes the static transforms (TF) for the robot
+    rsp = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution([FindPackageShare(package_name), 'launch', 'rsp.launch.py'])
+        ),
+        launch_arguments={'use_sim_time': use_sim_time, 'robot_description': robot_description_content}.items()
+    )
+
+    # 4. TWIST MUX (Merges Joystick, Keyboard, and Nav2 commands)
     twist_mux = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([FindPackageShare(package_name), 'launch', 'twist_mux.launch.py'])
@@ -54,89 +48,79 @@ def generate_launch_description():
         launch_arguments={'use_sim_time': use_sim_time}.items()
     )
 
-    controller_manager = Node(
-        package="controller_manager",
-        namespace=namespace,
-        executable="ros2_control_node",
-        parameters=[controllers_params_file_sub],
-        output="screen"
+    # 5. KEYBOARD BRIDGE (Allows laptop keyboard to drive the robot)
+    keyboard_bridge_node = Node(
+        package='articubot_one',
+        executable='keyboard_bridge.py',
+        name='keyboard_bridge',
+        output='screen'
     )
 
-    delayed_controller_manager = TimerAction(period=5.0, actions=[controller_manager])
+    # 6. CONTROLLER MANAGER (The Brains of the Operation)
+    # This connects to the hardware (Arduino) and manages the controllers
+    controller_manager = Node(
+        package="controller_manager",
+        executable="ros2_control_node",
+        parameters=[robot_description, controllers_params_file],
+        output="screen",
+        remappings=[
+            # Remap standard /robot_description so the node can find it
+            ("~/robot_description", "/robot_description")
+        ]
+    )
 
+    # 7. SPAWNERS (Start the specific controllers)
+    
+    # Joint State Broadcaster (Publishes the state of all joints to TF)
     joint_broad_spawner = Node(
         package="controller_manager",
-        namespace=namespace,
         executable="spawner",
         arguments=["joint_broad"],
         output="screen"
     )
 
-    battery_state_broadcaster_spawner = Node(
+    # Diff Drive Controller (Handles the wheel velocity)
+    diff_drive_spawner = Node(
         package="controller_manager",
-        namespace=namespace,
         executable="spawner",
-        arguments=["battery_state_broadcaster", "--controller-ros-args", "--remap battery_state_broadcaster/battery_state:=battery/battery_state"],
+        arguments=["diff_cont"],
         output="screen"
     )
 
-    diff_drive_spawner = Node(
-        package="controller_manager",
-        namespace=namespace,
-        executable="spawner",
-        arguments=["diff_cont", "--controller-ros-args", "--remap /tf:=diff_cont/tf"], # isolate TFs, if published.
-        output="screen"
-    )
+    # 8. DELAYED STARTUP SEQUENCE
+    # We delay the controller manager slightly to ensure RSP is up, 
+    # then we chain the spawners to start AFTER the manager is active.
+
+    delayed_controller_manager = TimerAction(period=3.0, actions=[controller_manager])
 
     delayed_joint_broad_spawner = RegisterEventHandler(
         event_handler=OnProcessStart(
             target_action=controller_manager,
-            on_start=[joint_broad_spawner]
-        )
-    )
-
-    delayed_battery_state_broadcaster_spawner = RegisterEventHandler(
-        event_handler=OnProcessStart(
-            target_action=controller_manager,
-            on_start=[battery_state_broadcaster_spawner]
+            on_start=[joint_broad_spawner],
         )
     )
 
     delayed_diff_drive_spawner = RegisterEventHandler(
         event_handler=OnProcessStart(
             target_action=joint_broad_spawner,
-            on_start=[diff_drive_spawner]
+            on_start=[diff_drive_spawner],
         )
     )
 
-    drive_include = GroupAction(
-        actions=[
-            twist_mux,
-            delayed_controller_manager,
-            delayed_diff_drive_spawner,
-            delayed_joint_broad_spawner,
-            delayed_battery_state_broadcaster_spawner
-        ]
-    )
-
+    # RETURN LAUNCH DESCRIPTION
     return LaunchDescription([
-
-        DeclareLaunchArgument(
-            'namespace',
-            default_value='',
-            description='Namespace for drive nodes'),
-
         DeclareLaunchArgument(
             'use_sim_time',
             default_value='false',
             description='Use sim time if true'),
-
-        DeclareLaunchArgument(
-            'robot_model',
-            default_value='',
-            description='Robot model (e.g., seggy, plucky, dragger)'),
-
-        LogInfo(msg=['============ starting ROBOT DRIVE  namespace: "', namespace, '"  use_sim_time: ', use_sim_time, ', robot_model: ', robot_model]),
-
-        drive_include
+        
+        LogInfo(msg=['============ STARTING REAL ROBOT HARDWARE ============']),
+        
+        rsp,
+        twist_mux,
+        keyboard_bridge_node,
+        
+        delayed_controller_manager,
+        delayed_joint_broad_spawner,
+        delayed_diff_drive_spawner
     ])

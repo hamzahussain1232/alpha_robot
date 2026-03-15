@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
+<robot name="xacro_properties" xmlns:xacro="http://ros.org/wiki/xacro">
 
-<robot name="xacro_properties" 
-  xmlns:xacro="http://ros.org/wiki/xacro">
+    <xacro:arg name="sim_mode" default="false"/>
 
     <material name="white">
         <color rgba="1 1 1 1" />
@@ -13,6 +13,10 @@
 
     <material name="red">
         <color rgba="1 0 0 1"/>
+    </material>
+
+    <material name="orange">
+        <color rgba="1 0.3 0.1 1"/>
     </material>
 
     <material name="green">
@@ -40,8 +44,7 @@
     </material>
 
     <material name="body_color">
-        <color rgba="0.6 0.5 0.2 0.85"/>
-    </material>
+        <color rgba="0.1 0.1 0.1 1"/> </material>
 
     <material name="port_red">
         <color rgba="1 0.2 0.2 1"/>
@@ -50,7 +53,5 @@
     <material name="starboard_green">
         <color rgba="0.2 1 0.2 1"/>
     </material>
-
-    <xacro:arg name="sim_mode" default="false"/>
 
 </robot>

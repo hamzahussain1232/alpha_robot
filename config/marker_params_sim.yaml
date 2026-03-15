@@ -1,0 +1,19 @@
+marker_detector_node:
+  ros__parameters:
+    use_sim_time: true
+    image_topic: "/camera/image_raw"
+    camera_info_topic: "/camera/camera_info"
+    amcl_pose_topic: "/amcl_pose"
+    markers_topic: "/perception/markers"
+    status_topic: "/task/status"
+    dictionary: "DICT_4X4_50"
+    marker_length_m: 0.094
+    process_every_n_frames: 2
+    max_markers: 20
+    target_marker_ids: [1, 2, 3]
+    require_robot_pose: true
+    camera_hfov_deg: 69.0
+    fallback_distance_m: 1.2
+    publish_empty_markers: false
+    camera_yaw_offset_deg: 0.0
+    camera_forward_offset_m: 0.0

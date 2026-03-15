@@ -1,0 +1,24 @@
+[
+  {
+    "label": "cup",
+    "aliases": ["mug", "coffee cup", "tea cup"],
+    "frame_id": "map",
+    "pose": { "x": 0.0, "y": 0.0, "yaw": 0.0 },
+    "pickup": { "height_m": 0.82 }
+  },
+  {
+    "label": "medicine box",
+    "aliases": ["medicine", "pill box", "tablet box"],
+    "frame_id": "map",
+    "pose": { "x": 0.0, "y": 0.0, "yaw": 0.0 },
+    "pickup": { "height_m": 0.88 }
+  },
+  {
+    "label": "water bottle",
+    "aliases": ["bottle", "water", "drink bottle"],
+    "frame_id": "map",
+    "pose": { "x": 0.0, "y": 0.0, "yaw": 0.0 },
+    "pickup": { "height_m": 0.9 }
+  }
+]
+

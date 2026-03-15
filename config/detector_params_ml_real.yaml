@@ -1,0 +1,27 @@
+object_detector_node:
+  ros__parameters:
+    use_sim_time: false
+    image_topic: "/camera/image_raw"
+    amcl_pose_topic: "/amcl_pose"
+    detections_topic: "/perception/detections"
+    status_topic: "/task/status"
+
+    # Proper ML detector profile (Ultralytics YOLO).
+    # Set to your local model path (pt/onnx supported by ultralytics).
+    # "yolo11n.pt" auto-downloads with ultralytics if missing.
+    backend: "ultralytics"
+    model_path: "yolo11n.pt"
+    device: "cpu"
+
+    confidence_threshold: 0.45
+    target_labels: ["cup", "bottle", "book", "cell phone", "remote", "medicine box", "pill"]
+    max_objects: 12
+    process_every_n_frames: 2
+    publish_empty_detections: false
+
+    enable_pose_estimation: true
+    require_robot_pose_for_detections: true
+    camera_hfov_deg: 62.0
+    default_distance_m: 0.9
+    label_distance_json: '{"cup":0.7,"bottle":0.8,"book":0.7,"remote":0.6,"cell phone":0.55,"medicine box":0.7,"pill":0.6}'
+    class_aliases_json: '{"cup":["mug","coffee cup"],"medicine box":["medicine","pill box","med box"],"bottle":["water bottle"],"pill":["medicine","tablet","capsule"]}'

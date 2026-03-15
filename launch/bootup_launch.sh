@@ -1,23 +1,28 @@
 #!/bin/bash
 
+# 1. Source ROS 2 (Jazzy)
 source /opt/ros/jazzy/setup.bash
 
+# 2. Build the workspace
+# (Note: In a finished robot, you usually disable 'colcon build' to make booting faster)
 cd /home/ros/robot_ws
-colcon build
-cd /home/ros/launch
+colcon build --symlink-install
 
+# 3. Source the Local Workspace
 source /home/ros/robot_ws/install/setup.bash
 
+# 4. Play startup sound (Optional)
 #aplay -D default:CARD=Set ~/wav/cat_meow.wav
 #aplay ~/wav/cat_meow.wav
 
-ros2 launch /home/ros/robot_ws/src/articubot_one/robots/seggy/launch/seggy.launch.py
-#ros2 launch /home/ros/robot_ws/src/articubot_one/robots/seggy/launch/seggy_sim_nav.launch.py
-#ros2 launch /home/ros/robot_ws/src/articubot_one/robots/seggy/launch/seggy_slam_toolbox.launch.py
+# ==============================================================================
+# LAUNCH THE ROBOT
+# We use 'ros2 launch package filename' so it finds the installed files correctly.
+# ==============================================================================
 
-#ros2 launch /home/ros/robot_ws/src/articubot_one/robots/plucky/launch/plucky.launch.py
-#ros2 launch /home/ros/robot_ws/src/articubot_one/robots/plucky/launch/plucky_sim_nav.launch.py
-#ros2 launch /home/ros/robot_ws/src/articubot_one/robots/plucky/launch/plucky_slam_toolbox.launch.py
+# Launch the Drive System (Motors, Encoders, Robot State Publisher)
+# This uses the 'drive.launch.py' file we fixed earlier.
+ros2 launch articubot_one drive.launch.py
 
-# Show arguments example:
-#ros2 launch /home/ros/robot_ws/src/articubot_one/robots/plucky/launch/plucky.launch.py  --show-arguments
+# Optional: Launch Camera in background (uncomment if needed)
+# ros2 launch articubot_one camera.launch.py &

@@ -1,0 +1,81 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+  <model name="aruco_marker_2">
+    <static>true</static>
+    <link name="marker_link">
+      <collision name="base_collision">
+        <pose>0 0 0.005 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.08 0.08 0.01</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <collision name="pole_collision">
+        <pose>0 0 0.06 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.01 0.01 0.12</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <collision name="board_collision">
+        <pose>0 0 0.145 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.002 0.12 0.12</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <visual name="base_visual">
+        <pose>0 0 0.005 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.08 0.08 0.01</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.2 0.2 0.2 1</ambient>
+          <diffuse>0.2 0.2 0.2 1</diffuse>
+        </material>
+      </visual>
+
+      <visual name="pole_visual">
+        <pose>0 0 0.06 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.01 0.01 0.12</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.15 0.15 0.15 1</ambient>
+          <diffuse>0.15 0.15 0.15 1</diffuse>
+        </material>
+      </visual>
+
+      <visual name="board_visual">
+        <pose>0 0 0.145 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.002 0.12 0.12</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>1 1 1 1</ambient>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.02 0.02 0.02 1</specular>
+          <pbr>
+            <metal>
+              <albedo_map>model://models/aruco_marker_2/materials/textures/aruco_2.png</albedo_map>
+              <roughness>0.9</roughness>
+              <metalness>0.0</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

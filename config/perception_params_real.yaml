@@ -1,0 +1,22 @@
+object_query_node:
+  ros__parameters:
+    use_sim_time: false
+    query_topic: "/task/object_query"
+    result_topic: "/task/object_result"
+    status_topic: "/task/status"
+    object_memory_file: ""
+    min_match_score: 0.62
+    reload_memory_on_each_query: false
+    use_live_detections: true
+    detections_topic: "/perception/detections"
+    prefer_live_detections: true
+    live_detection_ttl_sec: 2.5
+    min_detection_score: 0.45
+    # Map spoken intents to canonical object keywords/classes.
+    query_alias_map_json: '{"meds":"medicine","pill":"medicine","pill box":"medicine","water bottle":"bottle","coffee":"cup","mobile":"phone"}'
+    # Intent -> preferred detector labels (checked before lexical matching).
+    # For stock YOLO classes, medicine is usually proxied by bottle.
+    intent_to_labels_json: '{"medicine":["pill","medicine box","bottle"],"water":["bottle"],"cup":["cup"],"mug":["cup"],"book":["book"],"remote":["remote"],"phone":["cell phone"]}'
+    # Choose grasp target among multiple detections for same intent.
+    # highest_score|closest_center|balanced
+    live_target_policy: "balanced"

@@ -11,22 +11,44 @@
   <buildtool_depend>ament_cmake_python</buildtool_depend>
 
   <depend>rclcpp</depend>
+  <depend>rclpy</depend>
   <depend>xacro</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>trajectory_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>nav2_msgs</depend>
+  <depend>action_msgs</depend>
+  <depend>cv_bridge</depend>
+
   <depend>controller_manager</depend>
   <depend>ros2_control</depend>
   <depend>ros2_controllers</depend>
-  <depend>gz_ros2_control</depend>
-  <depend>topic_tools</depend>
+  <depend>diff_drive_controller</depend>
+  <depend>joint_state_broadcaster</depend>
+  <depend>robot_state_publisher</depend>
   <depend>twist_mux</depend>
-  <depend>robot_localization</depend>
-  <depend>imu_tools</depend>
-  <depend>slam_toolbox</depend>
-  <depend>navigation2</depend>
-  <depend>cartographer_ros</depend>
-  <depend>rviz_satellite</depend>
-  <depend>battery_state_rviz_overlay</depend>
+  
+  <exec_depend>ros_gz</exec_depend>
+  <exec_depend>ros_gz_sim</exec_depend> 
+  <exec_depend>ros_gz_bridge</exec_depend>
+  <exec_depend>gz_ros2_control</exec_depend>
 
-  <exec_depend>rclpy</exec_depend>
+  <exec_depend>v4l2_camera</exec_depend>
+  <exec_depend>imu_tools</exec_depend>
+  <exec_depend>python3-opencv</exec_depend>
+
+  <exec_depend>robot_localization</exec_depend>
+  <exec_depend>slam_toolbox</exec_depend>
+  <exec_depend>navigation2</exec_depend>
+  <exec_depend>nav2_bringup</exec_depend>
+  <exec_depend>cartographer_ros</exec_depend>
+
+  <exec_depend>rviz2</exec_depend>
+  <exec_depend>rviz_satellite</exec_depend>
+  <exec_depend>joint_state_publisher_gui</exec_depend>
+  <exec_depend>battery_state_rviz_overlay</exec_depend>
+
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
 

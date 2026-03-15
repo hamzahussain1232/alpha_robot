@@ -1,0 +1,27 @@
+task_manager_node:
+  ros__parameters:
+    use_sim_time: true
+    voice_topic: "/voice/text"
+    feedback_topic: "/voice/feedback"
+    status_topic: "/task/status"
+    object_query_topic: "/task/object_query"
+    object_result_topic: "/task/object_result"
+    markers_topic: "/perception/markers"
+    navigate_action_name: "/navigate_to_pose"
+    map_frame: "map"
+    home_pose: [0.0, 0.0, 0.0]
+    command_prefixes: ["bring", "fetch", "get", "find"]
+    marker_command_prefixes: ["move to", "go to", "navigate to", "drive to", "move marker", "go marker", "marker"]
+    ignore_words: ["me", "my", "the", "a", "an", "please", "robot", "to", "from"]
+    cancel_keywords: ["cancel task", "stop task", "abort task"]
+    marker_ttl_sec: 6.0
+    marker_min_score: 0.2
+    arm_joint_names: ["joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6"]
+    arm_pick: [0.0, 0.6, -1.1, 0.6, 0.0, 0.0]
+    arm_carry: [0.0, 0.1, -0.7, 0.4, 0.0, 0.0]
+    arm_place: [0.0, 0.3, -0.6, 0.2, 0.0, 0.0]
+    arm_move_duration_sec: 2.0
+    pick_wait_sec: 2.0
+    place_wait_sec: 1.2
+    allow_new_tasks_while_busy: false
+    query_timeout_sec: 6.0

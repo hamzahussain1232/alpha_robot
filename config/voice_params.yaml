@@ -1,0 +1,58 @@
+voice_command_node:
+  ros__parameters:
+    use_sim_time: true
+    linear_speed: 0.25
+    angular_speed: 0.8
+    motion_duration_sec: 1.0
+    arm_move_duration_sec: 2.0
+    command_match_threshold: 0.84
+    require_wake_word: false
+    wake_word: "robot"
+    command_cooldown_sec: 0.25
+    publish_unknown_feedback: false
+    strict_keyword_mode: true
+    prefer_last_keyword: true
+    motion_conflict_policy: "rotation"
+    continuous_motion_mode: true
+    allow_steering_while_moving: true
+    turn_in_place_when_idle: true
+
+    arm_home: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    arm_pick: [0.0, 0.6, -1.1, 0.6, 0.0, 0.0]
+    arm_place: [0.0, 0.3, -0.6, 0.2, 0.0, 0.0]
+
+voice_mic_node:
+  ros__parameters:
+    use_sim_time: true
+    backend: vosk
+    offline_only: true
+    language: en-US
+    device_index: -1
+    device_fallback_indices: [12, 10, 0, -1]
+    use_vosk_grammar: true
+    vosk_grammar: ["forward", "backward", "left", "right", "stop", "arm home", "arm pick", "arm place", "home", "pick", "place", "bring", "fetch", "get", "find", "my", "me", "please", "cup", "mug", "medicine", "medicine box", "pill box", "bottle", "water", "remote", "book", "move", "go", "navigate", "drive", "to", "marker", "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "move to one", "move to two", "move to three", "go to one", "go to two", "go to three", "navigate to one", "navigate to two", "navigate to three", "marker one", "marker two", "marker three", "move to marker one", "move to marker two", "move to marker three", "bring cup", "bring medicine", "bring my medicine", "bring me medicine", "fetch medicine", "get medicine", "find medicine"]
+    whisper_model: "tiny.en"
+    whisper_compute_type: "int8"
+    whisper_beam_size: 2
+    whisper_best_of: 1
+    whisper_temperature: 0.0
+    whisper_condition_on_previous_text: false
+    whisper_initial_prompt: "commands: forward backward left right stop arm home arm pick arm place move to one move to two move to three marker one marker two marker three bring medicine bring cup"
+    whisper_vad_filter: true
+    whisper_cpu_threads: 4
+    whisper_language: "en"
+
+    # Optional Vosk fallback model path.
+    vosk_model_path: "/home/hamza-hussain/ros2_ws/models/vosk-model-small-en-us-0.15"
+    vosk_sample_rate: 16000
+    phrase_time_limit: 1.6
+    listen_timeout: 0.8
+    ambient_adjust_sec: 0.6
+    energy_threshold: 220
+    dynamic_energy_threshold: true
+    pause_threshold: 0.35
+    non_speaking_duration: 0.2
+    max_consecutive_errors: 8
+    recalibrate_every_sec: 60.0
+    allow_sphinx_fallback: false
+    

@@ -1,0 +1,17 @@
+camera_safety_node:
+  ros__parameters:
+    use_sim_time: true
+    detections_topic: "/perception/detections"
+    lock_topic: "pause_navigation"
+    publish_rate_hz: 10.0
+    min_score: 0.45
+    # Keep empty to accept all detector labels as potential near obstacles.
+    allowed_labels: []
+    # Tuned for 640x480 sim camera stream.
+    min_bbox_area_ratio: 0.028
+    min_bbox_height_ratio: 0.20
+    trigger_bottom_ratio: 0.60
+    center_band_half_width: 0.44
+    lock_hold_sec: 0.90
+    detections_timeout_sec: 1.50
+

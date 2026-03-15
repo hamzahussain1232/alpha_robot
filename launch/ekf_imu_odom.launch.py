@@ -1,98 +1,45 @@
-# Copyright 2018 Open Source Robotics Foundation, Inc.
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 from launch import LaunchDescription
-from launch.substitutions import LaunchConfiguration, PythonExpression
-from ament_index_python.packages import get_package_share_directory
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch_ros.substitutions import FindPackageShare
 from launch.actions import DeclareLaunchArgument, LogInfo
-import launch_ros.actions
-
-#
-# Generate launch description for robot_localization EKF odometry node
-#
-# Use robot-specific configuration file from robots/<robot_model>/config/ekf_odom_params.yaml
-# (typically specifies wheels odometry and IMU inputs to fuse for better odometry)
-#
-# Example usage (see seggy.localizers.launch.py):
-#    ekf_imu_odom = IncludeLaunchDescription(
-#                PythonLaunchDescriptionSource(ekf_odom_path)
-#                ), launch_arguments={'use_sim_time': use_sim_time, 'robot_model' : robot_model, 'namespace': namespace}.items()
-#    )
+from launch_ros.actions import Node
 
 def generate_launch_description():
 
     package_name='articubot_one'
 
-    # Make namespace overridable at runtime
+    # ARGS
     namespace = LaunchConfiguration('namespace', default='')
+    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
 
-    # Check if we're told to use sim time
-    use_sim_time = LaunchConfiguration('use_sim_time')
-
-    # Robot specific files reside under "robots" directory - dragger, plucky, seggy, turtle...
-    robot_model = LaunchConfiguration('robot_model', default='')
-
-    package_path = get_package_share_directory(package_name)
-
-    robot_model_path = PythonExpression(["'", package_path, "' + '/robots/", robot_model,"'"])
-    
-    ekf_params_file = PythonExpression(["'", robot_model_path, "' + '/config/ekf_odom_params.yaml'"])
-
-    return LaunchDescription(
-        [
-            DeclareLaunchArgument(
-                'use_sim_time', default_value='false',
-                description='Use simulation (Gazebo) clock if true'
-            ),
-            DeclareLaunchArgument(
-                "output_final_position", default_value="false"
-            ),
-            DeclareLaunchArgument(
-                "output_location", default_value="~/ekf_odom_example_debug.txt"
-            ),
-
-            LogInfo(msg=['============ starting EKF ODOM  namespace: "', namespace, '"  use_sim_time: ', use_sim_time, ', robot_model: ', robot_model]),
-            LogInfo(msg=['EKF params file:', ekf_params_file]),
-
-            launch_ros.actions.Node(
-                package="robot_localization",
-                executable="ekf_node",
-                name="ekf_filter_node_odom",
-                output="screen",
-                parameters=[ekf_params_file, {"use_sim_time": use_sim_time}],
-                #remappings=[("odometry/filtered", "odometry/local"),("/tf", "tf_trash")],
-                remappings=[("odometry/filtered", "odometry/local")],
-            )
-        ]
+    # Params file can be overridden by parent launch (sim vs hardware profiles).
+    ekf_params_file = LaunchConfiguration(
+        'params_file',
+        default=PathJoinSubstitution([FindPackageShare(package_name), 'config', 'ekf.yaml'])
     )
 
-"""
-When TF is redirected, "ros2 topic echo /tf_trash":
-transforms:
-- header:
-    stamp: ...
-    frame_id: odom
-  child_frame_id: base_link
-  transform:
-    translation:
-      x, y, z: 0.0  initially, then x,y grow as robot moves
-    rotation:
-      x: 0.0
-      y: 0.0
-      z: 0.17050162685961162  # 30 degrees initially, then changes as robot rotates
-      w: 0.9853573946737426
+    return LaunchDescription([
+        DeclareLaunchArgument(
+            'use_sim_time', 
+            default_value='true',
+            description='Use simulation (Gazebo) clock if true'
+        ),
+        DeclareLaunchArgument(
+            'params_file',
+            default_value=PathJoinSubstitution([FindPackageShare(package_name), 'config', 'ekf.yaml']),
+            description='Path to EKF params YAML'
+        ),
 
-To disable TF publishing by EKF node, use "publish_tf: false" in ekf_odom_params.yaml file
-SLAM Toolbox requires this TF to be published by EKF node.
-Cartographer provides better localization when this TF is not published and "provide_odom_frame = true" in the .lua file
-"""
+        LogInfo(msg=['============ STARTING EKF FILTER ============']),
+        LogInfo(msg=['Loading params from: ', ekf_params_file]),
+
+        Node(
+            package="robot_localization",
+            executable="ekf_node",
+            name="ekf_filter_node_odom",
+            output="screen",
+            parameters=[ekf_params_file, {"use_sim_time": use_sim_time}],
+            # Remap filtered output to local odometry topic
+            remappings=[("odometry/filtered", "odometry/local")],
+        )
+    ])

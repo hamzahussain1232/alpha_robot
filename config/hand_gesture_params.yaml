@@ -1,0 +1,14 @@
+hand_gesture_teleop_node:
+  ros__parameters:
+    use_sim_time: false
+    image_topic: "/camera/image_raw"
+    cmd_topic: "/key_vel_in"
+    debug_topic: "/gesture/debug"
+    publish_debug: true
+    linear_speed: 0.20
+    angular_speed: 0.80
+    publish_rate_hz: 15.0
+    gesture_hold_sec: 0.60
+    min_detection_confidence: 0.55
+    min_tracking_confidence: 0.55
+    max_num_hands: 1

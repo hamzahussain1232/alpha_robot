@@ -12,32 +12,16 @@
 
 twist_mux:
   ros__parameters:
+    use_stamped: true
     topics:
-      generic:
-        topic   : cmd_vel
-        timeout : 0.5
-        priority: 10
       navigation:
         topic   : cmd_vel_nav
         timeout : 0.5
         priority: 20
-      joystick:
-        #topic   : joy_vel
-        topic   : cmd_vel_joy
-        timeout : 0.5
-        priority: 100
-      tracker:
-        topic   : cmd_vel_tracker
-        timeout : 0.5
-        priority: 30
       keyboard:
         topic   : key_vel
         timeout : 0.5
         priority: 90
-      tablet:
-        topic   : tab_vel
-        timeout : 0.5
-        priority: 100
 
 #
 # /opt/ros/jazzy/share/twist_mux/config/twist_mux_locks.yaml

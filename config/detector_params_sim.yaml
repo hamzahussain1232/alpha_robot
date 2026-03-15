@@ -1,0 +1,22 @@
+object_detector_node:
+  ros__parameters:
+    use_sim_time: true
+    image_topic: "/camera/image_raw"
+    amcl_pose_topic: "/amcl_pose"
+    detections_topic: "/perception/detections"
+    status_topic: "/task/status"
+    backend: "off"  # set to "ultralytics" after providing model_path
+    model_path: ""
+    device: "cpu"
+    confidence_threshold: 0.45
+    target_labels: ["cup", "medicine box", "bottle"]
+    max_objects: 8
+    process_every_n_frames: 3
+    publish_empty_detections: false
+    enable_pose_estimation: true
+    require_robot_pose_for_detections: true
+    camera_hfov_deg: 69.0
+    default_distance_m: 1.0
+    label_distance_json: '{"cup":1.0,"medicine box":1.1,"bottle":1.1}'
+    class_aliases_json: '{"cup":["mug","coffee cup"],"medicine box":["medicine","pill box"],"bottle":["water bottle"]}'
+

@@ -33,7 +33,7 @@ def generate_launch_description():
 
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         'use_sim_time',
-        default_value='false',
+        default_value='true',
         description='Use simulation (Gazebo) clock if true',
     )
 
@@ -98,7 +98,7 @@ def generate_launch_description():
                 namespace=namespace,
                 output='screen',
                 parameters=[
-                    #configured_params,
+                    {'use_sim_time': use_sim_time},
                     {'autostart': True}, {'node_names': ['map_server']}],
             ),
         ]

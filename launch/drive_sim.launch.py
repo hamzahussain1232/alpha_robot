@@ -1,72 +1,105 @@
 from launch import LaunchDescription
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, TextSubstitution
-from launch.actions import DeclareLaunchArgument, LogInfo, IncludeLaunchDescription, GroupAction, RegisterEventHandler, SetEnvironmentVariable
+import subprocess
+import time
+
+from launch.actions import (
+    DeclareLaunchArgument,
+    LogInfo,
+    IncludeLaunchDescription,
+    TimerAction,
+    SetEnvironmentVariable,
+    UnsetEnvironmentVariable,
+    OpaqueFunction,
+)
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.event_handlers import OnProcessStart
+from launch.conditions import IfCondition, UnlessCondition
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
-from nav2_common.launch import ReplaceString
-from articubot_one.launch_utils.helpers import include_launch
 
-#
-# Generate launch description for a typical differential drive robot drive system
-#
-# This includes necessary controllers for Gazebo-resident Controller Manager:
-# - twist mux for cmd_vel arbitration
-# - diff drive,
-# - joint state broadcaster,
-#
-# Also, contains Gazebo and RViz launching, simulated robot spawning, and ROS-Gazebo bridging.
-#
-# Use example (see seggy.drive.launch.py):
-# drive_sim_launch_path = PathJoinSubstitution([FindPackageShare(package_name), 'launch', 'drive_sim.launch.py'])
-# drive_sim_launch = IncludeLaunchDescription(
-#     PythonLaunchDescriptionSource(drive_sim_launch_path),
-#     launch_arguments={
-#         'namespace': namespace,
-#         'use_sim_time': use_sim_time,
-#         'robot_model': robot_model,
-#         # 'robot_world': 'empty_world', # see assets/worlds/*.sdf Default: 'test_robot_world'
-#         # 'initial_x': '1.0',
-#         # 'initial_y': '1.0',
-#         # 'initial_z': '20.0',
-#         # 'initial_yaw': '1.57'
-#     }.items(),
-#     condition=IfCondition(use_sim_time)
-# )
+def _cleanup_stale_sim_processes(context, *args, **kwargs):
+    enabled = LaunchConfiguration('cleanup_on_start').perform(context).lower() in ('true', '1', 'yes', 'on')
+    if not enabled:
+        return [LogInfo(msg='Skipping stale process cleanup')]
+
+    # Kill stale processes that commonly survive interrupted runs and cause duplicate /clock publishers.
+    patterns = [
+        r'[o]pt/ros/jazzy/lib/ros_gz_bridge/parameter_bridge',
+        r'[o]pt/ros/jazzy/lib/robot_state_publisher/robot_state_publisher',
+        r'[o]pt/ros/jazzy/lib/robot_localization/ekf_node',
+        r'[o]pt/ros/jazzy/lib/twist_mux/twist_mux',
+        r'[o]pt/ros/jazzy/lib/controller_manager/spawner',
+        r'[o]pt/ros/jazzy/lib/controller_manager/ros2_control_node',
+        r'[o]pt/ros/jazzy/lib/nav2_lifecycle_manager/lifecycle_manager',
+        r'[o]pt/ros/jazzy/lib/rviz2/rviz2',
+        r'[o]pt/ros/jazzy/lib/ros_gz_sim/create',
+        r'[a]rticubot_one/lib/articubot_one/keyboard_bridge.py',
+        r'[o]pt/ros/jazzy/lib/nav2_amcl/amcl',
+        r'[o]pt/ros/jazzy/lib/nav2_map_server/map_server',
+        r'[o]pt/ros/jazzy/lib/nav2_controller/controller_server',
+        r'[o]pt/ros/jazzy/lib/nav2_planner/planner_server',
+        r'[o]pt/ros/jazzy/lib/nav2_bt_navigator/bt_navigator',
+        r'[o]pt/ros/jazzy/lib/slam_toolbox/async_slam_toolbox_node',
+        r'[o]pt/ros/jazzy/lib/cartographer_ros/cartographer_node',
+        r'[o]pt/ros/jazzy/lib/cartographer_ros/cartographer_occupancy_grid_node',
+        r'[g]z sim .*articubot_one/.*/assets/worlds/.*\.sdf',
+        r'[g]z sim -g',
+        r'[r]uby .*/gz_tools_vendor/bin/gz sim .*articubot_one/.*/assets/worlds/.*\.sdf',
+        r'[r]uby .*/gz_tools_vendor/bin/gz sim .*--force-version 8',
+    ]
+    for pattern in patterns:
+        subprocess.run(['pkill', '-f', pattern], check=False)
+
+    # Gazebo may ignore SIGTERM when heavily loaded; enforce cleanup before spawning a new world.
+    hard_kill_patterns = [
+        r'[o]pt/ros/jazzy/lib/controller_manager/spawner',
+        r'[o]pt/ros/jazzy/lib/nav2_lifecycle_manager/lifecycle_manager',
+        r'[o]pt/ros/jazzy/lib/ros_gz_sim/create',
+        r'[o]pt/ros/jazzy/lib/cartographer_ros/cartographer_node',
+        r'[o]pt/ros/jazzy/lib/cartographer_ros/cartographer_occupancy_grid_node',
+        r'[g]z sim .*articubot_one/.*/assets/worlds/.*\.sdf',
+        r'[g]z sim -g',
+        r'[r]uby .*/gz_tools_vendor/bin/gz sim .*articubot_one/.*/assets/worlds/.*\.sdf',
+        r'[r]uby .*/gz_tools_vendor/bin/gz sim .*--force-version 8',
+    ]
+    time.sleep(0.5)
+    for pattern in hard_kill_patterns:
+        subprocess.run(['pkill', '-9', '-f', pattern], check=False)
+
+    # Give process table a brief moment to settle to avoid controller-manager races.
+    time.sleep(0.3)
+
+    return [LogInfo(msg='Cleaned stale Gazebo/ROS processes from previous runs')]
 
 def generate_launch_description():
 
-    package_name='articubot_one'
+    package_name = 'articubot_one'
 
-    # Accept namespace from parent launch or use empty default
+    # 1. ARGS
     namespace = LaunchConfiguration('namespace', default='')
+    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
+    robot_model = LaunchConfiguration('robot_model', default='minibot')
+    use_rviz = LaunchConfiguration('use_rviz', default='true')
+    use_gz_gui = LaunchConfiguration('use_gz_gui', default='true')
+    gz_verbosity = LaunchConfiguration('gz_verbosity', default='1')
+    spawn_arm_controller = LaunchConfiguration('spawn_arm_controller', default='false')
+    lidar_offset_x = LaunchConfiguration('lidar_offset_x', default='-0.08')
+    lidar_offset_y = LaunchConfiguration('lidar_offset_y', default='0.0')
+    lidar_offset_z = LaunchConfiguration('lidar_offset_z', default='0.0275')
+    cleanup_on_start = LaunchConfiguration('cleanup_on_start', default='true')
+    ros_localhost_only = LaunchConfiguration('ros_localhost_only', default='1')
+    ros_domain_id = LaunchConfiguration('ros_domain_id', default='42')
+    
+    # DEFINING THE WORLD PATH
+    world_file_name = 'home_assistant_room.sdf'
+    world_path = PathJoinSubstitution([
+        FindPackageShare(package_name), 'assets', 'worlds', world_file_name
+    ])
+    
+    robot_world = LaunchConfiguration('world')
 
-    # Check if we're told to use sim time
-    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
-
-    # Robot specific files reside under "robots" directory - sim, dragger, plucky, seggy, turtle...
-    robot_model = LaunchConfiguration('robot_model', default='')
-
-    # can be one of the files in assets/worlds: 
-    robot_world = LaunchConfiguration('robot_world', default='')
-
-    initial_x = LaunchConfiguration('initial_x', default='0.0') # meters, positive - towards East
-    initial_y = LaunchConfiguration('initial_y', default='0.0') # meters, positive - towards North
-    initial_z = LaunchConfiguration('initial_z', default='0.4') # let the robot gently settle on the ground plane
-    initial_yaw = LaunchConfiguration('initial_yaw', default='0.333') # radians, related to 0=East, default - 30 degrees towards North
-
-    # Include twist_mux for command velocity arbitration
-    twist_mux = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution([FindPackageShare(package_name), 'launch', 'twist_mux.launch.py'])
-        ),
-        launch_arguments={'use_sim_time': use_sim_time}.items()
-    )
-
-    #
-    # Start Gazebo (Harmonic, Ionic) (GZ, Ignition)
-    # -- set gazebo sim resource path for worlds and meshes (STLs):
+    # 2. GAZEBO SETUP
+    # Add assets path so Gazebo can find meshes/materials
     gazebo_resource_path = SetEnvironmentVariable(
         name='GZ_SIM_RESOURCE_PATH',
         value=[
@@ -76,179 +109,266 @@ def generate_launch_description():
         ]
     )
 
-    # Specify the world SDF:
-    gazebo_arguments = LaunchDescription([
-            DeclareLaunchArgument('world', default_value=robot_world, description='Gz sim Test World'),
-        ]
+    # Keep Gazebo logs in a writable location to avoid startup aborts if ~/.gz has bad permissions.
+    gazebo_log_path = SetEnvironmentVariable(
+        name='GZ_LOG_PATH',
+        value='/tmp/gz_logs'
     )
 
-    # -- how to launch Gazebo UI:
-    gazebo_ui = IncludeLaunchDescription(
+    # Avoid FastDDS shared-memory lock errors that spam terminal output.
+    fastrtps_udp_only = SetEnvironmentVariable(
+        name='FASTDDS_BUILTIN_TRANSPORTS',
+        value='UDPv4'
+    )
+
+    # Keep this simulation isolated from other ROS 2 participants on LAN.
+    ros_local_only = SetEnvironmentVariable(
+        name='ROS_LOCALHOST_ONLY',
+        value=ros_localhost_only
+    )
+
+    # Newer discovery control; reinforces localhost-only behavior.
+    ros_discovery_local = SetEnvironmentVariable(
+        name='ROS_AUTOMATIC_DISCOVERY_RANGE',
+        value='LOCALHOST'
+    )
+
+    # Put this project on its own DDS domain to avoid cross-talk from other ROS graphs.
+    ros_domain = SetEnvironmentVariable(
+        name='ROS_DOMAIN_ID',
+        value=ros_domain_id
+    )
+
+    # Launch exactly one Gazebo process: GUI or headless.
+    gazebo_with_gui = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([FindPackageShare('ros_gz_sim'), 'launch', 'gz_sim.launch.py'])
         ),
-        launch_arguments=[
-            ('gz_args', [LaunchConfiguration('world'),
-                '.sdf',
-                ' -v 4',
-                ' -r']
-            )
-        ]
+        launch_arguments={
+            'gz_args': [robot_world, ' -r -v ', gz_verbosity],
+            'on_exit_shutdown': 'true',
+        }.items(),
+        condition=IfCondition(use_gz_gui)
     )
 
-    # spawn entity (robot model) in the Gazebo gz_sim
-    # see arguments:  ros2 run ros_gz_sim create --helpshort
+    gazebo_headless = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution([FindPackageShare('ros_gz_sim'), 'launch', 'gz_sim.launch.py'])
+        ),
+        launch_arguments={
+            'gz_args': [robot_world, ' -s -r -v ', gz_verbosity],
+            'on_exit_shutdown': 'true',
+        }.items(),
+        condition=UnlessCondition(use_gz_gui)
+    )
+
+    # 3. ROBOT STATE PUBLISHER
+    rsp = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution([FindPackageShare(package_name), 'launch', 'rsp.launch.py'])
+        ),
+        launch_arguments={
+            'use_sim_time': use_sim_time,
+            'namespace': namespace,
+            'lidar_offset_x': lidar_offset_x,
+            'lidar_offset_y': lidar_offset_y,
+            'lidar_offset_z': lidar_offset_z,
+        }.items()
+    )
+
+    # 4. TWIST MUX
+    twist_mux = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution([FindPackageShare(package_name), 'launch', 'twist_mux.launch.py'])
+        ),
+        launch_arguments={'use_sim_time': use_sim_time}.items()
+    )
+
+    # 5. SPAWN ROBOT
     spawn_sim_robot = Node(
         package='ros_gz_sim',
         executable='create',
         namespace=namespace,
         arguments=[
             '-name', robot_model,
-            '-topic', '/robot_description',
-            # Robot's starting position on the Grid:
-            '-x', initial_x, # positive - towards East
-            '-y', initial_y, # positive - towards North
-            '-z', initial_z, # positive - up. default 0.4 meters - let it gently settle on the ground plane
-            '-Y', initial_yaw, # yaw (heading) in radians, related to 0=East, e.g. 0.333 = 30 degrees towards North
-            '-allow_renaming', 'true'],
+            '-topic', '/robot_description', 
+            '-x', '0.0', '-y', '0.0', '-z', '0.1', # Lifted z slightly to prevent floor clipping
+            '-Y', '0.0',
+            '-allow_renaming', 'false'],
         parameters=[{'use_sim_time': use_sim_time}],
         output='screen')
 
+    # 6. ARM TELEOP (Manual Terminal)
+    # Allows you to run: "ros2 run articubot_one arm_teleop.py" manually
+    
+    # 7. RVIZ
     rviz_and_joystick = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([FindPackageShare(package_name), 'launch', 'launch_rviz.launch.py'])
         ),
-        launch_arguments={'use_sim_time': use_sim_time}.items()
+        launch_arguments={'use_sim_time': use_sim_time, 'show_gui': 'false'}.items(),
+        condition=IfCondition(use_rviz)
     )
 
-    # Bridge ROS topics and Gazebo messages for establishing communication
-
-    gz_model_name = robot_model  # see spawn_sim_robot 'name' above, it becomes "gz model" for all gz queries
-
-    namespaced_gz_bridge_config_path = ReplaceString(
-        source_file=PathJoinSubstitution([FindPackageShare(package_name), 'config', 'gz_ros_bridge.yaml']),
-        replacements={"<model_name>": gz_model_name, "<namespace>": namespace, "///": "/", "//": "/"},
-    )
+    # 8. BRIDGE
+    bridge_config_file = PathJoinSubstitution([
+        FindPackageShare(package_name), 'config', 'gz_ros_bridge.yaml'
+    ])
 
     gz_bridge = Node(
         package='ros_gz_bridge',
         namespace=namespace,
         executable='parameter_bridge',
         parameters=[{
-            'config_file': namespaced_gz_bridge_config_path,
+            'config_file': bridge_config_file,
             'qos_overrides./tf_static.publisher.durability': 'transient_local',
         }],
         output='screen'
     )
 
-    #
-    # Gazebo-related variations of spawners
-    # 
-    # No need to run controller_manager - it runs within Gazebo ROS2 Bridge.
-    # We only need to point spawners to the correct controller_manager instance in the arguments.
-    # Only configure controllers, after the robot shows up live in GZ:
-
+    # 9. CONTROLLERS
     joint_broad_spawner = Node(
         package="controller_manager",
         namespace=namespace,
         executable="spawner",
-        arguments=["joint_broad", "--controller-manager", "/controller_manager"],
+        arguments=[
+            "joint_broad",
+            "--controller-manager", "/controller_manager",
+            "--controller-manager-timeout", "90",
+            "--switch-timeout", "90",
+            "--service-call-timeout", "30",
+        ],
         output="screen"
     )
 
-    diff_drive_spawner = Node(
+    arm_spawner = Node(
         package="controller_manager",
         namespace=namespace,
         executable="spawner",
-        arguments=["diff_cont", "--controller-manager", "/controller_manager", "--controller-ros-args", "--remap /tf:=diff_cont/tf" # isolate TFs, if published.
-                   # remappings don't work in simulation. Use relay. They aren't needed anyway, all is configured to subscribe to /diff_cont/odom topic.
-                   #"--controller-ros-args", "--remap odom:=/odom", # remap odom to root namespace, if needed
-                   #"--controller-ros-args", "--remap /tf:=diff_cont/tf" # isolate TFs, if published (it is not, "enable_odom_tf:false" in controllers.yaml).
-                   ],
+        arguments=[
+            "arm_controller",
+            "--controller-manager", "/controller_manager",
+            "--controller-manager-timeout", "90",
+            "--switch-timeout", "90",
+            "--service-call-timeout", "30",
+        ],
         output="screen"
     )
 
-    delayed_joint_broad_spawner = RegisterEventHandler(
-        event_handler=OnProcessStart(
-            target_action=spawn_sim_robot,
-            on_start=[joint_broad_spawner],
-        )
+    diff_spawner = Node(
+        package="controller_manager",
+        namespace=namespace,
+        executable="spawner",
+        arguments=[
+            "diff_cont",
+            "--controller-manager", "/controller_manager",
+            "--controller-manager-timeout", "90",
+            "--switch-timeout", "90",
+            "--service-call-timeout", "30",
+        ],
+        output="screen"
     )
 
-    delayed_diff_drive_spawner = RegisterEventHandler(
-        event_handler=OnProcessStart(
-            target_action=joint_broad_spawner,
-            on_start=[diff_drive_spawner],
-        )
+    # 10. KEYBOARD BRIDGE
+    keyboard_bridge_node = Node(
+        package='articubot_one',
+        executable='keyboard_bridge.py',
+        name='keyboard_bridge',
+        namespace=namespace,
+        parameters=[{'use_sim_time': use_sim_time}],
+        output='screen'
     )
 
-    # =========================================================================
-
-    # have Gazebo and drive system launched as separate groups:
-
-    gz_include = GroupAction(
-        actions=[
-
-            #SetRemap(src='diff_cont/odom', dst='odom'),
-
-            gazebo_resource_path,
-            gazebo_arguments,
-            gazebo_ui,
-            spawn_sim_robot,
-            gz_bridge,
-            #odom_relay,
-        ]
+    # One-shot delayed startup (no event re-triggers), avoids duplicate spawner execution.
+    delayed_spawn_robot = TimerAction(period=3.0, actions=[spawn_sim_robot])
+    delayed_joint_broad_spawner = TimerAction(period=7.0, actions=[joint_broad_spawner])
+    delayed_diff_spawner = TimerAction(period=9.0, actions=[diff_spawner])
+    delayed_arm_spawner = TimerAction(
+        period=11.0,
+        actions=[arm_spawner],
+        condition=IfCondition(spawn_arm_controller),
     )
 
-    drive_include = GroupAction(
-        actions=[
-            rviz_and_joystick,
-            twist_mux,
-            delayed_diff_drive_spawner,
-            delayed_joint_broad_spawner,
-            #waypoint_follower    # or, "ros2 run articubot_one xy_waypoint_follower.py"
-        ]
-    )
-
-    # We need to run an EKF filter here to ensure its output stabilizes before starting SLAM Toolbox or other Localizers.
-    # Localizers/mappers only publish the map to odom transform. Robot needs EKF filter to publish odom to base_link transform.
-    ekf_imu_odom = include_launch(
-        package_name,
-        ['launch', 'ekf_imu_odom.launch.py'],
-        {
+    # 11. EKF (Localization)
+    ekf_params_file = PathJoinSubstitution([
+        FindPackageShare(package_name), 'config', 'ekf_sim.yaml'
+    ])
+    ekf_imu_odom = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution([FindPackageShare(package_name), 'launch', 'ekf_imu_odom.launch.py'])
+        ),
+        launch_arguments={
             'use_sim_time': use_sim_time,
-            'robot_model': robot_model,
-            'namespace': namespace
-        }
+            'namespace': namespace,
+            'params_file': ekf_params_file,
+        }.items()
     )
-
-    # Launch them all!
 
     return LaunchDescription([
-
+        # DEFAULT ARGUMENTS
+        DeclareLaunchArgument('namespace', default_value=''),
+        DeclareLaunchArgument('use_sim_time', default_value='true'),
+        DeclareLaunchArgument('robot_model', default_value='minibot'),
+        DeclareLaunchArgument('world', default_value=world_path),
+        DeclareLaunchArgument('use_rviz', default_value='true'),
+        DeclareLaunchArgument('use_gz_gui', default_value='true'),
+        DeclareLaunchArgument('gz_verbosity', default_value='1'),
         DeclareLaunchArgument(
-            'namespace',
-            default_value='',
-            description='Namespace for drive nodes'),
-
+            'spawn_arm_controller',
+            default_value='false',
+            description='Spawn arm trajectory controller in simulation'
+        ),
         DeclareLaunchArgument(
-            'use_sim_time',
-            default_value='true',
-            description='Use simulation (Gazebo) clock if true'),
-
+            'lidar_offset_x',
+            default_value='0.0',
+            description='LiDAR X offset from chassis center (meters, +front)'
+        ),
         DeclareLaunchArgument(
-            'robot_model',
-            default_value='',
-            description='Robot model (e.g., seggy, plucky, dragger)'),
-
+            'lidar_offset_y',
+            default_value='0.0',
+            description='LiDAR Y offset from chassis center (meters, +left)'
+        ),
         DeclareLaunchArgument(
-            'robot_world',
-            default_value='test_robot_world',
-            description='Robot world (e.g., test_robot_world, empty_world, baylands)'),
-
-        LogInfo(msg=['============ starting ROBOT DRIVE (SIM)  namespace: "', namespace, '"  use_sim_time: ', use_sim_time, ', robot_model: ', robot_model, ', robot_world: ', robot_world]),
-
-        gz_include,
-        drive_include,
+            'lidar_offset_z',
+            default_value='0.0275',
+            description='LiDAR height offset above chassis top (meters)'
+        ),
+        DeclareLaunchArgument('cleanup_on_start', default_value='true'),
+        DeclareLaunchArgument(
+            'ros_localhost_only',
+            default_value='1',
+            description='Set to 1 to isolate ROS graph to this machine only'
+        ),
+        DeclareLaunchArgument(
+            'ros_domain_id',
+            default_value='42',
+            description='DDS domain ID used by this simulation stack'
+        ),
+        
+        LogInfo(msg=['============ STARTING SIMULATION ============']),
+        OpaqueFunction(function=_cleanup_stale_sim_processes),
+        
+        # LAUNCH ORDER
+        # Running from Snap shells can inject incompatible GTK/Snap libs.
+        # Unsetting these keeps Gazebo GUI / RViz stable.
+        UnsetEnvironmentVariable(name='GTK_PATH'),
+        UnsetEnvironmentVariable(name='SNAP_LIBRARY_PATH'),
+        fastrtps_udp_only,
+        ros_local_only,
+        ros_discovery_local,
+        ros_domain,
+        gazebo_resource_path,
+        gazebo_log_path,
+        gazebo_with_gui,
+        gazebo_headless,
+        gz_bridge,
+        delayed_spawn_robot,
+        rsp,
+        rviz_and_joystick,
+        twist_mux,
+        delayed_joint_broad_spawner,
+        delayed_arm_spawner,
+        delayed_diff_spawner,
+        keyboard_bridge_node,
         ekf_imu_odom
     ])

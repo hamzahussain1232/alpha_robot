@@ -1,192 +1,108 @@
 #! /usr/bin/env python3
-# Copyright 2021 Samsung Research America
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+# Run:
+#   ros2 run articubot_one xy_waypoint_follower.py --file sim_waypoints
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# YAML format:
+# waypoints:
+#   - x: 0.0
+#     y: 0.0
+#     yaw: 0.0
+#     frame_id: map  # optional
 
-#
-# See /opt/ros/jazzy/lib/python3.12/site-packages/nav2_simple_commander/example_waypoint_follower.py
-#     https://github.com/ros-navigation/navigation2/tree/main/nav2_simple_commander/nav2_simple_commander
-#     https://automaticaddison.com/how-to-send-waypoints-to-the-ros-2-navigation-stack-nav-2/
-#
-# Run this script:
-#  cd ~/robot_ws; colcon build; ros2 run articubot_one xy_waypoint_follower.py
+import argparse
+import math
+import os
+import yaml
 
+from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import PoseStamped
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 import rclpy
-from rclpy.duration import Duration
 
-"""
-Basic navigation demo to go to poses.
 
-Note: When nodes are started, X, Y and Z are set to zero (see initial_pose.pose.position below)
-      The goal_pose.pose.position.* coordinates are relative to initial pose.
-      This script is good for sim, but for real use case the robot must be placed in the same spot 
-      when its ROS2 software is started
-"""
+def quaternion_from_yaw(yaw):
+    half = yaw * 0.5
+    return 0.0, 0.0, math.sin(half), math.cos(half)
 
-"""
-Follow waypoints using the ROS 2 Navigation Stack (Nav2)
-"""
-def main():
- 
-    # Start the ROS 2 Python Client Library
+
+class YamlWaypointParser:
+    def __init__(self, file_name):
+        self.file_path = os.path.join(
+            get_package_share_directory("articubot_one"),
+            "assets",
+            "waypoints",
+            f"{file_name}.yaml",
+        )
+        with open(self.file_path, "r", encoding="utf-8") as wps_file:
+            self.wps_dict = yaml.safe_load(wps_file)
+
+    def get_waypoints(self):
+        waypoints = self.wps_dict.get("waypoints", [])
+        if not waypoints:
+            raise ValueError("No waypoints found in YAML file")
+        return waypoints
+
+
+def build_goal_poses(navigator, waypoints):
+    goal_poses = []
+    now = navigator.get_clock().now().to_msg()
+    for wp in waypoints:
+        x = float(wp["x"])
+        y = float(wp["y"])
+        yaw = float(wp.get("yaw", 0.0))
+        frame_id = str(wp.get("frame_id", "map"))
+        _, _, qz, qw = quaternion_from_yaw(yaw)
+
+        goal_pose = PoseStamped()
+        goal_pose.header.frame_id = frame_id
+        goal_pose.header.stamp = now
+        goal_pose.pose.position.x = x
+        goal_pose.pose.position.y = y
+        goal_pose.pose.orientation.z = qz
+        goal_pose.pose.orientation.w = qw
+        goal_poses.append(goal_pose)
+    return goal_poses
+
+
+def main(file_name):
     rclpy.init()
-
-    # Launch the ROS 2 Navigation Stack
     navigator = BasicNavigator()
 
-    '''
-    # Set our demo's initial pose if necessary
-    initial_pose = PoseStamped()
-    initial_pose.header.frame_id = 'map'
-    initial_pose.header.stamp = navigator.get_clock().now().to_msg()
-    initial_pose.pose.position.x = 0.0
-    initial_pose.pose.position.y = 0.0
-    initial_pose.pose.orientation.z = 0.0
-    initial_pose.pose.orientation.w = 1.0
-    navigator.setInitialPose(initial_pose)
-    '''
-    # Activate navigation, if not autostarted. This should be called after setInitialPose()
-    # or this will initialize at the origin of the map and update the costmap with bogus readings.
-    # If autostart, you should `waitUntilNav2Active()` instead.
-    # navigator.lifecycleStartup()
+    # In your navigation mode, AMCL is the localizer.
+    navigator.waitUntilNav2Active(localizer="amcl")
 
-    # Wait for navigation to fully activate. Use this line if autostart is set to true.
-    # https://github.com/ros-navigation/navigation2/issues/2283
-    #navigator.waitUntilNav2Active()  # must use AMCL, will wait for amcl/get_state service available
-    navigator.waitUntilNav2Active(localizer='bt_navigator')
+    parser = YamlWaypointParser(file_name)
+    waypoints = parser.get_waypoints()
+    goal_poses = build_goal_poses(navigator, waypoints)
 
-    # If desired, you can change or load the map as well
-    # navigator.changeMap('/path/to/map.yaml')
-
-    # You may use the navigator to clear or obtain costmaps
-    # navigator.clearAllCostmaps()  # also have clearLocalCostmap() and clearGlobalCostmap()
-    # global_costmap = navigator.getGlobalCostmap()
-    # local_costmap = navigator.getLocalCostmap()
-
-    # Set the robot's goal poses
-    goal_poses = []
-
-    goal_pose = PoseStamped()
-    goal_pose.header.frame_id = 'map'
-    goal_pose.header.stamp = navigator.get_clock().now().to_msg()
-    goal_pose.pose.position.x = 0.0
-    goal_pose.pose.position.y = 5.0
-    goal_pose.pose.orientation.x = 0.0
-    goal_pose.pose.orientation.y = 0.0
-    goal_pose.pose.orientation.z = 0.0
-    goal_pose.pose.orientation.w = 1.0
-    goal_poses.append(goal_pose)
-
-    # additional goals can be appended
-    goal_pose = PoseStamped()
-    goal_pose.header.frame_id = 'map'
-    goal_pose.header.stamp = navigator.get_clock().now().to_msg()
-    goal_pose.pose.position.x = 5.0
-    goal_pose.pose.position.y = 5.0
-    goal_pose.pose.orientation.x = 0.0
-    goal_pose.pose.orientation.y = 0.0
-    goal_pose.pose.orientation.z = 0.0
-    goal_pose.pose.orientation.w = 1.0
-    goal_poses.append(goal_pose)
-
-    goal_pose = PoseStamped()
-    goal_pose.header.frame_id = 'map'
-    goal_pose.header.stamp = navigator.get_clock().now().to_msg()
-    goal_pose.pose.position.x = 5.0
-    goal_pose.pose.position.y = 0.0
-    goal_pose.pose.orientation.x = 0.0
-    goal_pose.pose.orientation.y = 0.0
-    goal_pose.pose.orientation.z = 0.0
-    goal_pose.pose.orientation.w = 1.0
-    goal_poses.append(goal_pose)
-
-    goal_pose = PoseStamped()
-    goal_pose.header.frame_id = 'map'
-    goal_pose.header.stamp = navigator.get_clock().now().to_msg()
-    goal_pose.pose.position.x = 0.0
-    goal_pose.pose.position.y = 0.0
-    goal_pose.pose.orientation.x = 0.0
-    goal_pose.pose.orientation.y = 0.0
-    goal_pose.pose.orientation.z = 0.0
-    goal_pose.pose.orientation.w = 1.0
-    goal_poses.append(goal_pose)
-
-    # sanity check a valid path exists
-    # path = navigator.getPath(initial_pose, goal_pose)
-    # path = navigator.getPathThroughPoses(initial_pose, goal_poses) ???
-
-    nav_start = navigator.get_clock().now()
+    print(f"Loaded {len(goal_poses)} waypoints from {parser.file_path}")
     navigator.followWaypoints(goal_poses)
 
-    i = 0
     while not navigator.isTaskComplete():
-        ################################################
-        #
-        # Implement some code here for your application!
-        #
-        ################################################
-
-        # Do something with the feedback
-        i = i + 1
         feedback = navigator.getFeedback()
-        if feedback and i % 5 == 0:
-            print(
-                'Executing current waypoint: '
-                + str(feedback.current_waypoint + 1)
-                + '/'
-                + str(len(goal_poses))
-            )
-            now = navigator.get_clock().now()
+        if feedback is not None:
+            print(f"Executing waypoint {feedback.current_waypoint + 1}/{len(goal_poses)}")
 
-            # Some navigation timeout to demo cancellation
-            if now - nav_start > Duration(seconds=600.0):
-                print('Timeout 10 minutes: canceling task')
-                navigator.cancelTask()
-
-            # Some follow waypoints request change to demo preemption
-            if now - nav_start > Duration(seconds=300.0):
-                print('Timeout 5 minutes: Executing alternative destination waypoint')
-                goal_pose_alt = PoseStamped()
-                goal_pose_alt.header.frame_id = 'map'
-                goal_pose_alt.header.stamp = now.to_msg()
-                goal_pose_alt.pose.position.x = 0.0
-                goal_pose_alt.pose.position.y = 0.0
-                goal_pose_alt.pose.position.z = 0.0
-                goal_pose_alt.pose.orientation.x = 0.0
-                goal_pose_alt.pose.orientation.y = 0.0
-                goal_pose_alt.pose.orientation.z = 0.0
-                goal_pose_alt.pose.orientation.w = 1.0
-                goal_poses = [goal_pose_alt]
-                nav_start = now
-                navigator.followWaypoints(goal_poses)
-
-    # Do something depending on the return code
     result = navigator.getResult()
     if result == TaskResult.SUCCEEDED:
-        print('Goal succeeded!')
+        print("Waypoints succeeded")
     elif result == TaskResult.CANCELED:
-        print('Goal was canceled!')
+        print("Waypoints canceled")
     elif result == TaskResult.FAILED:
-        print('Goal failed!')
+        print("Waypoints failed")
     else:
-        print('Goal has an invalid return status!')
+        print("Unknown waypoint result")
 
-    #navigator.lifecycleShutdown()
+    rclpy.shutdown()
 
-    exit(0)
 
-if __name__ == '__main__':
-    main()
-
+if __name__ == "__main__":
+    arg_parser = argparse.ArgumentParser(description="Follow map-frame waypoints from YAML")
+    arg_parser.add_argument(
+        "--file",
+        default="sim_waypoints",
+        help='YAML file name in assets/waypoints without extension, e.g. "sim_waypoints"',
+    )
+    args = arg_parser.parse_args()
+    main(args.file)

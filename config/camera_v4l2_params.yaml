@@ -1,0 +1,8 @@
+v4l2_camera:
+  ros__parameters:
+    image_size: [640, 480]
+    time_per_frame: [1, 30]
+    camera_frame_id: camera_link_optical
+    # MJPG crashes on this webcam/driver combo with current v4l2_camera in Jazzy.
+    pixel_format: YUYV
+    output_encoding: rgb8

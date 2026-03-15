@@ -16,7 +16,7 @@ detect_ball:
 
 detect_ball_3d:
   ros__parameters:
-    h_fov: 1.089
+    h_fov: 1.047
     ball_radius: 0.033
     camera_frame: "camera_link_optical"
 

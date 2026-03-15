@@ -20,32 +20,24 @@
     </plugin>
 
     <gravity>0 0 -9.8</gravity>
-    <!-- looks like magnetic field here is ignored, and is instead calculated by location in Gazebo Harmonic -->
-    <!-- magnetic_field>5.5645e-06 2.28758e-05 -4.23884e-05</magnetic_field -->
     <atmosphere type='adiabatic'/>
 
     <spherical_coordinates>
       <surface_model>EARTH_WGS84</surface_model>
       <world_frame_orientation>ENU</world_frame_orientation>
-      <!-- lat/lon/alt show up in gps/fix topic in sim -->
       <latitude_deg>38.16153</latitude_deg>
       <longitude_deg>-122.45475</longitude_deg>
       <elevation>150</elevation>
       <heading_deg>0</heading_deg>
-      <!-- see https://docs.nav2.org/tutorials/docs/navigation2_with_gps.html
-      currently gazebo has a bug: instead of outputting lat, long, altitude in ENU
-      (x = East, y = North and z = Up) as the default configurations, it's outputting (-E)(-N)U,
-      therefore we rotate the default frame 180 so that it would go back to ENU
-      see: https://github.com/osrf/gazebo/issues/2022 -->
-      <!-- heading_deg>180</heading_deg -->
     </spherical_coordinates>
 
     <scene>
       <grid>false</grid>
-      <ambient>0.400000006 0.400000006 0.400000006 1</ambient>
-      <background>0.699999988 0.699999988 0.699999988 1</background>
+      <ambient>0.4 0.4 0.4 1</ambient>
+      <background>0.7 0.7 0.7 1</background>
       <shadows>true</shadows>
     </scene>
+    
     <gui fullscreen='false'>
       <plugin name='3D View' filename='GzScene3D'>
         <ignition-gui>
@@ -58,7 +50,7 @@
         <ambient_light>0.4 0.4 0.4</ambient_light>
         <background_color>0.5 0.8 0.95</background_color>
         <camera_follow>
-          <target>my_robot</target>
+          <target>minibot</target>
           <p_gain>0.5</p_gain>
           <offset>0.5 5 2</offset>
         </camera_follow>
@@ -101,12 +93,6 @@
         <real_time_factor>true</real_time_factor>
         <iterations>true</iterations>
       </plugin>
-      <plugin name='dis' filename='ImageDisplay'>
-        <ignition-gui>
-          <property key='state' type='string'>docked</property>
-        </ignition-gui>
-        <topic>front_camera</topic>
-      </plugin>
       <plugin name='Teleop' filename='Teleop'>
         <ignition-gui>
           <property type='string' key='state'>docked</property>
@@ -114,18 +100,44 @@
         <topic>/cmd_vel</topic>
       </plugin>
     </gui>
-    <include>
-      <uri>https://fuel.ignitionrobotics.org/1.0/openrobotics/models/Sonoma Raceway</uri>
-      <name>sonoma_raceway</name>
-      <pose>-282.0 138.0 -8.0 0 0 0</pose>
-    </include>
 
-    <!-- 
-        "<scale>0.3 0.3 0.3</scale>" - this does not work for included models
-        see http://models.gazebosim.org/construction_cone/
-            original cone scale is 10, mine is 6 -->
+    <!-- Offline-safe base plane; Fuel racetrack include removed on purpose. -->
+    <model name='ground_plane'>
+      <static>true</static>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>400 400</size>
+            </plane>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>0.8</mu>
+                <mu2>0.8</mu2>
+              </ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='visual'>
+          <cast_shadows>false</cast_shadows>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>400 400</size>
+            </plane>
+          </geometry>
+          <material>
+            <diffuse>0.35 0.45 0.35 1</diffuse>
+            <specular>0 0 0 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
     <include>
-      <!-- <uri>https://fuel.ignitionrobotics.org/1.0/OpenRobotics/models/Construction Cone</uri> -->
       <uri>model://models/construction_cone</uri>
       <name>Construction Cone One</name>
       <pose>6 -2 0 0 0 0</pose>
@@ -136,7 +148,7 @@
       <pose>5 -7 0 0 0 0</pose>
     </include>
 
-    <light name="sunUTC" type="directional">
+    <light name="sonoma_sun" type="directional">
       <pose>0 0 500 0 -0 0</pose>
       <cast_shadows>true</cast_shadows>
       <intensity>1</intensity>
@@ -149,11 +161,6 @@
         <constant>1</constant>
         <quadratic>0</quadratic>
       </attenuation>
-      <spot>
-        <inner_angle>0</inner_angle>
-        <outer_angle>0</outer_angle>
-        <falloff>0</falloff>
-      </spot>
     </light>
   </world>
 </sdf>

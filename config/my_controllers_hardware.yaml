@@ -1,0 +1,87 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 100
+    use_sim_time: false
+
+    diff_cont:
+      type: diff_drive_controller/DiffDriveController
+    camera_tilt_controller:
+      type: forward_command_controller/ForwardCommandController
+
+
+    joint_broad:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    # NEW: Arm Controller Definition
+    arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+diff_cont:
+  ros__parameters:
+    publish_rate: 50.0
+    cmd_vel_timeout: 1.0
+    enable_odom_tf: false
+
+    base_frame_id: base_link
+
+    # === 4-WHEEL CONFIGURATION ===
+    # We list both Front and Rear wheels. 
+    # The controller sends the same speed to both (Skid Steering).
+    left_wheel_names: ['front_left_wheel_joint', 'rear_left_wheel_joint']
+    right_wheel_names: ['front_right_wheel_joint', 'rear_right_wheel_joint']
+
+    # Distance between left and right wheels (0.155m * 2)
+    wheel_separation: 0.31
+    
+    # Wheel Radius (0.0425m)
+    wheel_radius: 0.0425
+
+    # Keyboard input is bridged to TwistStamped on /key_vel, so keep this true.
+    use_stamped_vel: true
+
+    # Safety Limits (Adjusted for Minibot)
+    linear:
+      x:
+        has_velocity_limits: true
+        max_velocity: 1.0
+        min_velocity: -1.0
+        max_acceleration: 2.0
+    angular:
+      z:
+        has_velocity_limits: true
+        max_velocity: 2.0
+        max_acceleration: 4.0
+camera_tilt_controller:
+  ros__parameters:
+    joints:
+      - camera_joint
+    interface_name: position
+
+# NEW: Arm Controller Configuration
+arm_controller:
+  ros__parameters:
+    joints:
+      - joint_1
+      - joint_2
+      - joint_3
+      - joint_4
+      - joint_5
+      - joint_6
+    
+    command_interfaces:
+      - position
+    
+    state_interfaces:
+      - position
+      - velocity
+    
+    state_publish_rate: 50.0
+    action_monitor_rate: 20.0
+
+    allow_partial_joints_goal: false
+    open_loop_control: true
+    allow_integration_in_goal_trajectories: true
+
+joint_broad:
+  ros__parameters:
+    use_sim_time: false

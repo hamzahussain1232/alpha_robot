@@ -28,18 +28,30 @@ def generate_launch_description():
 
     # Check if we're told to use sim time
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
+    lidar_offset_x = LaunchConfiguration('lidar_offset_x', default='0.0')
+    lidar_offset_y = LaunchConfiguration('lidar_offset_y', default='0.0')
+    lidar_offset_z = LaunchConfiguration('lidar_offset_z', default='0.0275')
 
     # Robot specific files reside under "robots" directory - sim, dragger, plucky, seggy, turtle...
-    robot_model = LaunchConfiguration('robot_model', default='')
-
+    xacro_file = PathJoinSubstitution([
+        FindPackageShare(package_name), 'description', 'robot.urdf.xacro'
+    ])
     # Build substitution-based paths so robot_model can be used at launch-time
     # Path to the robot xacro file (resolved at launch time)
-    xacro_file = PathJoinSubstitution([
-        FindPackageShare(package_name), 'robots', robot_model, 'description', 'robot.urdf.xacro'
-    ])
 
     # Produce full XML/SDF description by invoking xacro on the substitution path
-    robot_description_sdf = Command(['xacro ', xacro_file, ' sim_mode:=', use_sim_time])
+    robot_description_sdf = Command([
+        'xacro ',
+        xacro_file,
+        ' sim_mode:=',
+        use_sim_time,
+        ' lidar_offset_x:=',
+        lidar_offset_x,
+        ' lidar_offset_y:=',
+        lidar_offset_y,
+        ' lidar_offset_z:=',
+        lidar_offset_z,
+    ])
     
     # Create a robot_state_publisher node
     # See https://github.com/ros/robot_state_publisher/tree/jazzy
@@ -49,7 +61,8 @@ def generate_launch_description():
         executable='robot_state_publisher',
         name='robot_state_publisher',
         output='screen',
-        parameters=[{'robot_description': ParameterValue(robot_description_sdf, value_type=str),
+        parameters=[{'use_sim_time': use_sim_time,
+                    'robot_description': ParameterValue(robot_description_sdf, value_type=str),
                     #'publish_frequency' : 5.0,  # Defaults to 20.0 Hz. Only affects non-static joints.
                     #'frame_prefix': '',
                     #'ignore_timestamp': 'false'
@@ -83,9 +96,27 @@ def generate_launch_description():
             'use_sim_time',
             default_value='false',
             description='Use sim time if true'),
+        DeclareLaunchArgument(
+            'lidar_offset_x',
+            default_value='0.0',
+            description='LiDAR X offset from chassis center (meters, +front)'
+        ),
+        DeclareLaunchArgument(
+            'lidar_offset_y',
+            default_value='0.0',
+            description='LiDAR Y offset from chassis center (meters, +left)'
+        ),
+        DeclareLaunchArgument(
+            'lidar_offset_z',
+            default_value='0.0275',
+            description='LiDAR height offset above chassis top (meters)'
+        ),
 
-        LogInfo(msg=['============ starting ROBOT STATE PUBLISHER  namespace: "', namespace, '"  use_sim_time: ', use_sim_time, ', robot_model: ', robot_model]),
+        LogInfo(msg=['============ starting ROBOT STATE PUBLISHER  namespace: "', namespace, '"  use_sim_time: ', use_sim_time]),
         LogInfo(msg=['xacro_file: ', xacro_file]),
+        LogInfo(msg=['lidar_offset_x: ', lidar_offset_x]),
+        LogInfo(msg=['lidar_offset_y: ', lidar_offset_y]),
+        LogInfo(msg=['lidar_offset_z: ', lidar_offset_z]),
 
         node_robot_state_publisher,
 

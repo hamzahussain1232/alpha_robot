@@ -1,59 +1,52 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, LogInfo
+from launch.actions import DeclareLaunchArgument, LogInfo, IncludeLaunchDescription
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node
-from articubot_one.launch_utils.helpers import include_launch
-
-
-"""
-AMCL (Adaptive Monte Carlo Localization) Localizer
-Provides probabilistic localization using particle filters.
-Requires a pre-built map and initial pose estimate (/initialpose)
-Provides pose estimates through Monte Carlo sampling.
-Often used with Nav2 for navigation with known maps.
-"""
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 def generate_launch_description():
     
     package_name = 'articubot_one'
 
+    # ARGS
     namespace = LaunchConfiguration('namespace', default='')
-    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
-    robot_model = LaunchConfiguration('robot_model', default='')
-    # Optional map file to pass to map_server (empty -> map_server default)
+    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
     map_file = LaunchConfiguration('map', default='')
 
-    # Note: EKF filter must be launched prior (in the Drive or Sensors launch file) 
-    # It is needed to provide odom->base_link transform
+    # CONFIG PATHS
+    # We use nav2_params.yaml because it contains the 'amcl' section we created earlier.
+    amcl_params_file = PathJoinSubstitution([
+        FindPackageShare(package_name), 'config', 'nav2_params.yaml'
+    ])
 
-    # Include map server for AMCL (AMCL expects a map)
-    map_server = include_launch(
-        package_name,
-        ['launch', 'map_server.launch.py'],
-        {
+    # INCLUDE MAP SERVER (The "Main" one from launch/)
+    # AMCL cannot work without a map, so we launch the map server here.
+    map_server = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution([FindPackageShare(package_name), 'launch', 'map_server.launch.py'])
+        ),
+        launch_arguments={
             'use_sim_time': use_sim_time,
             'namespace': namespace,
             'map': map_file,
-            'params_file': PathJoinSubstitution([FindPackageShare(package_name), 'config', 'map_server_params.yaml']),
-        }
+        }.items()
     )
 
-    # Path to AMCL params file inside the robot config directory
-    amcl_params_file = PathJoinSubstitution([
-        FindPackageShare(package_name), 'robots', robot_model, 'config', 'amcl_params.yaml'
-    ])
-
+    # AMCL NODE
     amcl_node = Node(
         package='nav2_amcl',
         executable='amcl',
         namespace=namespace,
+        name='amcl',
+        output='screen',
         parameters=[amcl_params_file, {'use_sim_time': use_sim_time}],
-        remappings=[('odom', 'odometry/local'), ('scan', 'scan')],
-        name='amcl',  # Explicit name for lifecycle manager
+        # Remap odom to your EKF output (odometry/local)
+        remappings=[('odom', '/odometry/local'), ('scan', '/scan')]
     )
 
-    # Lifecycle manager to activate AMCL
+    # LIFECYCLE MANAGER (Specifically for AMCL)
+    # Note: Map Server has its own lifecycle manager in its own launch file
     lifecycle_manager = Node(
         package='nav2_lifecycle_manager',
         executable='lifecycle_manager',
@@ -61,6 +54,7 @@ def generate_launch_description():
         name='lifecycle_manager_amcl',
         output='screen',
         parameters=[{
+            'use_sim_time': use_sim_time,
             'autostart': True,
             'node_names': ['amcl']
         }],
@@ -68,20 +62,16 @@ def generate_launch_description():
 
     return LaunchDescription([
         DeclareLaunchArgument('namespace', default_value=''),
-        DeclareLaunchArgument('use_sim_time', default_value='false'),
-        DeclareLaunchArgument('robot_model', default_value=''),
-        DeclareLaunchArgument('map', default_value='', description='Path to map YAML file for map_server (optional)'),
+        DeclareLaunchArgument('use_sim_time', default_value='true'),
+        
+        DeclareLaunchArgument(
+            'map', 
+            default_value='', 
+            description='Path to map YAML file (required)'
+        ),
 
-        LogInfo(msg=[
-            '============ starting AMCL + MAP SERVER LOCALIZER  namespace="', namespace,
-            '"  use_sim_time=', use_sim_time,
-            '  robot_model=', robot_model,
-        ]),
-
-        LogInfo(msg=[
-            '  amcl_params_file=', amcl_params_file,
-            '  map=', map_file
-        ]),
+        LogInfo(msg=['============ STARTING AMCL LOCALIZATION ============']),
+        LogInfo(msg=['Params: ', amcl_params_file]),
 
         map_server,
         amcl_node,

@@ -1,0 +1,202 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" >
+
+    <!-- Real hardware profile from provided kit sheet:
+         base plate ~9cm x 8.4cm, overall chain length target ~50.5cm. -->
+    <xacro:property name="arm_base_radius" value="0.032"/>
+    <xacro:property name="arm_base_length" value="0.030"/>
+    <xacro:property name="arm_base_mass" value="0.20"/>
+
+    <xacro:property name="link_1_radius" value="0.022"/>
+    <xacro:property name="link_1_length" value="0.050"/>
+    <xacro:property name="link_1_mass" value="0.10"/>
+
+    <xacro:property name="link_2_radius" value="0.020"/>
+    <xacro:property name="link_2_length" value="0.140"/>
+    <xacro:property name="link_2_mass" value="0.15"/>
+
+    <xacro:property name="link_3_radius" value="0.018"/>
+    <xacro:property name="link_3_length" value="0.125"/>
+    <xacro:property name="link_3_mass" value="0.13"/>
+
+    <xacro:property name="link_4_radius" value="0.016"/>
+    <xacro:property name="link_4_length" value="0.070"/>
+    <xacro:property name="link_4_mass" value="0.08"/>
+
+    <xacro:property name="link_5_radius" value="0.016"/>
+    <xacro:property name="link_5_length" value="0.050"/>
+    <xacro:property name="link_5_mass" value="0.06"/>
+
+    <xacro:property name="link_6_radius" value="0.022"/>
+    <xacro:property name="link_6_length" value="0.040"/>
+    <xacro:property name="link_6_mass" value="0.05"/>
+
+    <joint name="arm_base_joint" type="fixed">
+        <parent link="chassis"/>
+        <child link="arm_base_link"/>
+        <origin xyz="0.07 0 ${chassis_height}" rpy="0 0 0"/>
+    </joint>
+
+    <link name="arm_base_link">
+        <visual>
+            <origin xyz="0 0 ${arm_base_length/2}"/>
+            <geometry><cylinder radius="${arm_base_radius}" length="${arm_base_length}"/></geometry>
+            <material name="orange"><color rgba="1 0.3 0.1 1"/></material>
+        </visual>
+        <visual>
+            <origin xyz="0 0 0.002"/>
+            <geometry><box size="0.09 0.084 0.004"/></geometry>
+            <material name="grey"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 ${arm_base_length/2}"/>
+            <geometry><cylinder radius="${arm_base_radius}" length="${arm_base_length}"/></geometry>
+        </collision>
+        <collision>
+            <origin xyz="0 0 0.002"/>
+            <geometry><box size="0.09 0.084 0.004"/></geometry>
+        </collision>
+        <xacro:inertial_cylinder mass="${arm_base_mass}" length="${arm_base_length}" radius="${arm_base_radius}">
+            <origin xyz="0 0 ${arm_base_length/2}" rpy="0 0 0"/>
+        </xacro:inertial_cylinder>
+    </link>
+
+    <joint name="joint_1" type="revolute">
+        <parent link="arm_base_link"/>
+        <child link="link_1"/>
+        <origin xyz="0 0 ${arm_base_length}" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
+        <limit lower="-3.14" upper="3.14" effort="100" velocity="1"/>
+    </joint>
+
+    <link name="link_1">
+        <visual>
+            <origin xyz="0 0 ${link_1_length/2}"/>
+            <geometry><cylinder radius="${link_1_radius}" length="${link_1_length}"/></geometry>
+            <material name="yellow"><color rgba="1 1 0 1"/></material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 ${link_1_length/2}"/>
+            <geometry><cylinder radius="${link_1_radius}" length="${link_1_length}"/></geometry>
+        </collision>
+        <xacro:inertial_cylinder mass="${link_1_mass}" length="${link_1_length}" radius="${link_1_radius}">
+            <origin xyz="0 0 ${link_1_length/2}" rpy="0 0 0"/>
+        </xacro:inertial_cylinder>
+    </link>
+
+    <joint name="joint_2" type="revolute">
+        <parent link="link_1"/>
+        <child link="link_2"/>
+        <origin xyz="0 0 ${link_1_length}" rpy="0 0 0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.57" upper="1.57" effort="100" velocity="1"/>
+    </joint>
+
+    <link name="link_2">
+        <visual>
+            <origin xyz="0 0 ${link_2_length/2}"/>
+            <geometry><cylinder radius="${link_2_radius}" length="${link_2_length}"/></geometry>
+            <material name="white"><color rgba="1 1 1 1"/></material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 ${link_2_length/2}"/>
+            <geometry><cylinder radius="${link_2_radius}" length="${link_2_length}"/></geometry>
+        </collision>
+        <xacro:inertial_cylinder mass="${link_2_mass}" length="${link_2_length}" radius="${link_2_radius}">
+            <origin xyz="0 0 ${link_2_length/2}" rpy="0 0 0"/>
+        </xacro:inertial_cylinder>
+    </link>
+
+    <joint name="joint_3" type="revolute">
+        <parent link="link_2"/>
+        <child link="link_3"/>
+        <origin xyz="0 0 ${link_2_length}" rpy="0 0 0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-2.5" upper="2.5" effort="100" velocity="1"/>
+    </joint>
+
+    <link name="link_3">
+        <visual>
+            <origin xyz="0 0 ${link_3_length/2}"/>
+            <geometry><cylinder radius="${link_3_radius}" length="${link_3_length}"/></geometry>
+            <material name="blue"><color rgba="0.2 0.2 1 1"/></material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 ${link_3_length/2}"/>
+            <geometry><cylinder radius="${link_3_radius}" length="${link_3_length}"/></geometry>
+        </collision>
+        <xacro:inertial_cylinder mass="${link_3_mass}" length="${link_3_length}" radius="${link_3_radius}">
+            <origin xyz="0 0 ${link_3_length/2}" rpy="0 0 0"/>
+        </xacro:inertial_cylinder>
+    </link>
+
+    <joint name="joint_4" type="revolute">
+        <parent link="link_3"/>
+        <child link="link_4"/>
+        <origin xyz="0 0 ${link_3_length}" rpy="0 0 0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-3.14" upper="3.14" effort="100" velocity="1"/>
+    </joint>
+
+    <link name="link_4">
+        <visual>
+            <origin xyz="0 0 ${link_4_length/2}"/>
+            <geometry><cylinder radius="${link_4_radius}" length="${link_4_length}"/></geometry>
+            <material name="orange"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 ${link_4_length/2}"/>
+            <geometry><cylinder radius="${link_4_radius}" length="${link_4_length}"/></geometry>
+        </collision>
+        <xacro:inertial_cylinder mass="${link_4_mass}" length="${link_4_length}" radius="${link_4_radius}">
+            <origin xyz="0 0 ${link_4_length/2}" rpy="0 0 0"/>
+        </xacro:inertial_cylinder>
+    </link>
+
+    <joint name="joint_5" type="revolute">
+        <parent link="link_4"/>
+        <child link="link_5"/>
+        <origin xyz="0 0 ${link_4_length}" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
+        <limit lower="-3.14" upper="3.14" effort="100" velocity="1"/>
+    </joint>
+
+    <link name="link_5">
+        <visual>
+            <origin xyz="0 0 ${link_5_length/2}"/>
+            <geometry><cylinder radius="${link_5_radius}" length="${link_5_length}"/></geometry>
+            <material name="yellow"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 ${link_5_length/2}"/>
+            <geometry><cylinder radius="${link_5_radius}" length="${link_5_length}"/></geometry>
+        </collision>
+        <xacro:inertial_cylinder mass="${link_5_mass}" length="${link_5_length}" radius="${link_5_radius}">
+            <origin xyz="0 0 ${link_5_length/2}" rpy="0 0 0"/>
+        </xacro:inertial_cylinder>
+    </link>
+
+    <joint name="joint_6" type="revolute">
+        <parent link="link_5"/>
+        <child link="link_6"/>
+        <origin xyz="0 0 ${link_5_length}" rpy="0 0 0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-3.14" upper="3.14" effort="100" velocity="1"/>
+    </joint>
+
+    <link name="link_6">
+        <visual>
+            <origin xyz="0 0 ${link_6_length/2}"/>
+            <geometry><cylinder radius="${link_6_radius}" length="${link_6_length}"/></geometry>
+            <material name="blue"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 ${link_6_length/2}"/>
+            <geometry><cylinder radius="${link_6_radius}" length="${link_6_length}"/></geometry>
+        </collision>
+        <xacro:inertial_cylinder mass="${link_6_mass}" length="${link_6_length}" radius="${link_6_radius}">
+            <origin xyz="0 0 ${link_6_length/2}" rpy="0 0 0"/>
+        </xacro:inertial_cylinder>
+    </link>
+
+</robot>
