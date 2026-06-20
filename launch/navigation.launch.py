@@ -13,8 +13,9 @@ def generate_launch_description():
 
     # ARGS
     namespace = LaunchConfiguration('namespace', default='')
-    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
+    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
     use_composition = LaunchConfiguration('use_composition', default='False')
+    odom_topic = LaunchConfiguration('odom_topic', default='/odom')
 
     # FIXED PATH: Point directly to config/nav2_params.yaml
     nav2_params_file = PathJoinSubstitution([
@@ -43,7 +44,7 @@ def generate_launch_description():
             'use_sim_time': use_sim_time,
             'use_composition': use_composition,
             'container_name': 'nav2_container',
-            'odom_topic': 'odometry/local', # Matches your EKF output
+            'odom_topic': odom_topic,
             'autostart': 'true',
             'params_file': nav2_params_file
         }.items()
@@ -52,25 +53,23 @@ def generate_launch_description():
     # Nav2 publishes geometry_msgs/Twist. Our drive stack and twist_mux use TwistStamped.
     # Convert Nav2 command stream into stamped commands on /cmd_vel_nav.
     nav_cmd_stamper = Node(
-        package='twist_stamper',
-        executable='twist_stamper',
+        package=package_name,
+        executable='twist_stamper.py',
         name='nav_cmd_stamper',
         namespace=namespace,
         output='screen',
         parameters=[{
+            'input_topic': 'cmd_vel_nav_unstamped',
+            'output_topic': 'cmd_vel_nav',
             'frame_id': 'base_link',
-            'use_sim_time': use_sim_time,
         }],
-        remappings=[
-            ('cmd_vel_in', 'cmd_vel_nav_unstamped'),
-            ('cmd_vel_out', 'cmd_vel_nav'),
-        ],
     )
 
     return LaunchDescription([
         DeclareLaunchArgument('namespace', default_value=''),
-        DeclareLaunchArgument('use_sim_time', default_value='true'),
+        DeclareLaunchArgument('use_sim_time', default_value='false'),
         DeclareLaunchArgument('use_composition', default_value='False'),
+        DeclareLaunchArgument('odom_topic', default_value='/odom'),
 
         LogInfo(msg=['============ STARTING NAV2 STACK ============']),
         LogInfo(msg=['Params file: ', nav2_params_file]),

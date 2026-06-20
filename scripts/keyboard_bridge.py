@@ -7,13 +7,14 @@ from geometry_msgs.msg import Twist, TwistStamped
 class KeyboardBridge(Node):
     def __init__(self):
         super().__init__('keyboard_bridge')
-        # Accept both the project-specific keyboard topic and default teleop topic.
-        self.sub_key = self.create_subscription(Twist, '/key_vel_in', self.listener_callback, 10)
+        # Accept keyboard commands from wasd_teleop (publishes to /cmd_vel by default)
         self.sub_cmd = self.create_subscription(Twist, '/cmd_vel', self.listener_callback, 10)
+        # Also accept legacy /key_vel_in for backward compatibility
+        self.sub_key = self.create_subscription(Twist, '/key_vel_in', self.listener_callback, 10)
         # Publish "Stamped" commands to the Mux
         self.pub = self.create_publisher(TwistStamped, '/key_vel', 10)
         self.get_logger().info(
-            'Keyboard Bridge Started: converting /key_vel_in or /cmd_vel (Twist) -> /key_vel (TwistStamped)'
+            'Keyboard Bridge Started: converting /cmd_vel or /key_vel_in (Twist) -> /key_vel (TwistStamped)'
         )
 
     def listener_callback(self, msg):
@@ -27,9 +28,15 @@ class KeyboardBridge(Node):
 
         stamped_msg = TwistStamped()
         stamped_msg.header.stamp = self.get_clock().now().to_msg()
-        stamped_msg.header.frame_id = 'base_link' # No specific frame needed
+        stamped_msg.header.frame_id = 'base_link'
         stamped_msg.twist = msg
         self.pub.publish(stamped_msg)
+        
+        # Debug logging for keyboard commands
+        if msg.linear.x != 0.0 or msg.angular.z != 0.0:
+            self.get_logger().debug(
+                f'Keyboard cmd: v={msg.linear.x:.3f}, w={msg.angular.z:.3f} -> /key_vel'
+            )
 
 def main(args=None):
     rclpy.init(args=args)

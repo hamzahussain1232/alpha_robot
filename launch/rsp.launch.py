@@ -28,9 +28,11 @@ def generate_launch_description():
 
     # Check if we're told to use sim time
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
+    include_arm = LaunchConfiguration('include_arm', default='false')
     lidar_offset_x = LaunchConfiguration('lidar_offset_x', default='0.0')
     lidar_offset_y = LaunchConfiguration('lidar_offset_y', default='0.0')
     lidar_offset_z = LaunchConfiguration('lidar_offset_z', default='0.0275')
+    lidar_yaw = LaunchConfiguration('lidar_yaw', default='0.0')
 
     # Robot specific files reside under "robots" directory - sim, dragger, plucky, seggy, turtle...
     xacro_file = PathJoinSubstitution([
@@ -45,12 +47,16 @@ def generate_launch_description():
         xacro_file,
         ' sim_mode:=',
         use_sim_time,
+        ' include_arm:=',
+        include_arm,
         ' lidar_offset_x:=',
         lidar_offset_x,
         ' lidar_offset_y:=',
         lidar_offset_y,
         ' lidar_offset_z:=',
         lidar_offset_z,
+        ' lidar_yaw:=',
+        lidar_yaw,
     ])
     
     # Create a robot_state_publisher node
@@ -97,6 +103,10 @@ def generate_launch_description():
             default_value='false',
             description='Use sim time if true'),
         DeclareLaunchArgument(
+            'include_arm',
+            default_value='false',
+            description='Include arm links/joints in robot description'),
+        DeclareLaunchArgument(
             'lidar_offset_x',
             default_value='0.0',
             description='LiDAR X offset from chassis center (meters, +front)'
@@ -111,12 +121,18 @@ def generate_launch_description():
             default_value='0.0275',
             description='LiDAR height offset above chassis top (meters)'
         ),
+        DeclareLaunchArgument(
+            'lidar_yaw',
+            default_value='0.0',
+            description='LiDAR yaw offset relative to robot front (radians)'
+        ),
 
         LogInfo(msg=['============ starting ROBOT STATE PUBLISHER  namespace: "', namespace, '"  use_sim_time: ', use_sim_time]),
         LogInfo(msg=['xacro_file: ', xacro_file]),
         LogInfo(msg=['lidar_offset_x: ', lidar_offset_x]),
         LogInfo(msg=['lidar_offset_y: ', lidar_offset_y]),
         LogInfo(msg=['lidar_offset_z: ', lidar_offset_z]),
+        LogInfo(msg=['lidar_yaw: ', lidar_yaw]),
 
         node_robot_state_publisher,
 

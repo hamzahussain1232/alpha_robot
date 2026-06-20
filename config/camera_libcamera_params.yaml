@@ -1,0 +1,13 @@
+/**:
+  ros__parameters:
+    camera: 0
+    role: viewfinder
+    format: YUYV
+    # Mapping-safe profile for Pi 5 + camera v2.1:
+    # lower decode/transport load while keeping useful detail.
+    width: 960
+    height: 540
+    # ~15 FPS (microseconds per frame): 1 / 15 ~= 66666 us
+    FrameDurationLimits: [66666, 66666]
+    frame_id: camera_link_optical
+    use_node_time: true

@@ -34,7 +34,6 @@
   <exec_depend>ros_gz_bridge</exec_depend>
   <exec_depend>gz_ros2_control</exec_depend>
 
-  <exec_depend>v4l2_camera</exec_depend>
   <exec_depend>imu_tools</exec_depend>
   <exec_depend>python3-opencv</exec_depend>
 

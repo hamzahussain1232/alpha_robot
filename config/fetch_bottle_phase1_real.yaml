@@ -1,0 +1,25 @@
+fetch_bottle_node:
+  ros__parameters:
+    use_sim_time: false
+    detections_topic: "/perception/detections"
+    cmd_topic: "/cmd_vel"
+    status_topic: "/task/status"
+    target_topic: "/task/target_object"
+
+    target_label: "bottle"
+    min_valid_score: 0.35
+    stable_detection_frames: 4
+    lost_target_timeout_sec: 0.8
+
+    loop_hz: 10.0
+    search_spin_speed: 0.35
+    align_kp: 0.9
+    approach_align_kp: 0.65
+    max_angular_speed: 0.55
+    align_deadband_norm: 0.08
+
+    approach_linear_speed: 0.08
+    approach_stop_bbox_height_ratio: 0.35
+    approach_stop_bbox_width_ratio: 0.30
+    search_timeout_sec: 0.0
+    approach_timeout_sec: 30.0

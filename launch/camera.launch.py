@@ -1,43 +1,70 @@
-import os
 from launch import LaunchDescription
-from launch_ros.actions import Node
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, LogInfo, OpaqueFunction
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
-def generate_launch_description():
 
-    # Allow changing the device from command line:
-    # ros2 launch articubot_one camera.launch.py video_device:=/dev/video2
+def generate_launch_description():
+    package_name = "articubot_one"
+
+    driver_arg = DeclareLaunchArgument(
+        "driver",
+        default_value="libcamera",
+        description="Deprecated compatibility argument. Only libcamera (Pi CSI camera) is supported.",
+    )
     video_device_arg = DeclareLaunchArgument(
-        'video_device', 
-        default_value='/dev/video0',
-        description='Path to video device (e.g. /dev/video0, /dev/video2)'
+        "video_device",
+        default_value="/dev/video0",
+        description="Deprecated compatibility argument. Ignored in libcamera mode.",
     )
     params_file_arg = DeclareLaunchArgument(
-        'params_file',
-        default_value=PathJoinSubstitution(
-            [FindPackageShare('articubot_one'), 'config', 'camera_v4l2_params.yaml']
-        ),
-        description='Path to v4l2 camera params yaml'
+        "params_file",
+        default_value="",
+        description="Optional explicit camera params yaml. Leave empty to use driver defaults.",
     )
 
-    return LaunchDescription([
-        video_device_arg,
-        params_file_arg,
+    def launch_setup(context, *_args, **_kwargs):
+        driver = LaunchConfiguration("driver").perform(context).strip().lower()
+        params_override = LaunchConfiguration("params_file").perform(context).strip()
 
-        Node(
-            package='v4l2_camera',
-            executable='v4l2_camera_node',
-            output='screen',
-            # CRITICAL: Remap the topic to match the Simulation and Ball Tracker
-            remappings=[
-                ('/image_raw', '/camera/image_raw'),
-                ('/camera_info', '/camera/camera_info'),
-            ],
-            parameters=[
-                LaunchConfiguration('params_file'),
-                {'video_device': LaunchConfiguration('video_device')},
-            ]
+        params_file = (
+            params_override
+            or PathJoinSubstitution(
+                [FindPackageShare(package_name), "config", "camera_libcamera_params.yaml"]
+            ).perform(context)
         )
-    ])
+        actions = []
+        if driver != "libcamera":
+            actions.append(
+                LogInfo(
+                    msg=[
+                        "camera.launch.py: driver='",
+                        driver,
+                        "' requested, but only libcamera is supported. Using libcamera.",
+                    ]
+                )
+            )
+        actions.append(
+            Node(
+                package="camera_ros",
+                executable="camera_node",
+                name="camera",
+                output="screen",
+                remappings=[
+                    ("/image_raw", "/camera/image_raw"),
+                    ("/camera_info", "/camera/camera_info"),
+                ],
+                parameters=[params_file],
+            )
+        )
+        return actions
+
+    return LaunchDescription(
+        [
+            driver_arg,
+            video_device_arg,
+            params_file_arg,
+            OpaqueFunction(function=launch_setup),
+        ]
+    )

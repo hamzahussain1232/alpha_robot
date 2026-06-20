@@ -1,90 +1,67 @@
-// Mega ADK serial drive + 4 encoder reporting
+// L298N 4-motor drive + 4 encoder reporting (Arduino Mega)
 // Serial protocol:
 //   Command: "M <left_pwm> <right_pwm>\n"  (PWM range -255..255)
 //   Telemetry: "E <fl> <fr> <rl> <rr>\n"   (encoder counts)
-//
-// Notes:
-// - A-channel pins use interrupt-capable pins on Mega: 2,3,18,19
-// - B-channel pins can be any digital pins (choose pins not used by motors)
-// - Adjust encoder pins, CPR, and invert flags as needed.
 
-// ==========================================
-//        L298N #1 (LEFT SIDE MOTORS)
-// ==========================================
-const int enA_Left = 4;
-const int in1_Left = 22; // Front-Left Direction
-const int in2_Left = 24; // Front-Left Direction
+const int enFL = 4;
+const int inFL1 = 22;
+const int inFL2 = 24;
 
-const int enB_Left = 5;
-const int in3_Left = 26; // Rear-Left Direction
-const int in4_Left = 28; // Rear-Left Direction
+const int enRL = 5;
+const int inRL1 = 26;
+const int inRL2 = 28;
 
-// ==========================================
-//        L298N #2 (RIGHT SIDE MOTORS)
-// ==========================================
-const int enA_Right = 6;
-const int in1_Right = 23; // Front-Right Direction
-const int in2_Right = 25; // Front-Right Direction
+const int enFR = 6;
+const int inFR1 = 23;
+const int inFR2 = 25;
 
-const int enB_Right = 7;
-const int in3_Right = 27; // Rear-Right Direction
-const int in4_Right = 29; // Rear-Right Direction
+const int enRR = 7;
+const int inRR1 = 27;
+const int inRR2 = 29;
+
+const bool INVERT_FL = true;
+const bool INVERT_RL = true;
+const bool INVERT_FR = false;
+const bool INVERT_RR = false;
 
 // ==========================================
 //              ENCODER PINS
 // ==========================================
-// A channels must be interrupt-capable pins on Mega
+// A channels must be interrupt-capable pins on Mega: 2,3,18,19
 const int encFL_A = 2;
 const int encFR_A = 3;
 const int encRL_A = 18;
 const int encRR_A = 19;
 
-// B channels can be any digital pins (avoid motor pins)
+// B channels can be any digital pins
 const int encFL_B = 30;
 const int encFR_B = 31;
 const int encRL_B = 32;
 const int encRR_B = 33;
 
-// ==========================================
-//            ENCODER SETTINGS
-// ==========================================
-const long ENCODER_CPR = 13730; // adjust if needed
-const bool INVERT_FL = false;
-const bool INVERT_FR = false;
-const bool INVERT_RL = false;
-const bool INVERT_RR = false;
+// Invert if counts go backwards
+const bool INVERT_ENC_FL = true;
+const bool INVERT_ENC_FR = false;
+const bool INVERT_ENC_RL = true;
+const bool INVERT_ENC_RR = false;
 
 volatile long countFL = 0;
 volatile long countFR = 0;
 volatile long countRL = 0;
 volatile long countRR = 0;
 
-// ==========================================
-//            SERIAL SETTINGS
-// ==========================================
 const long SERIAL_BAUD = 115200;
 const unsigned long COMMAND_TIMEOUT_MS = 500;
 unsigned long last_cmd_ms = 0;
 
-// ==========================================
-//            INTERRUPT ISRs
-// ==========================================
-void isrFL() { countFL += (digitalRead(encFL_B) ^ INVERT_FL) ? 1 : -1; }
-void isrFR() { countFR += (digitalRead(encFR_B) ^ INVERT_FR) ? 1 : -1; }
-void isrRL() { countRL += (digitalRead(encRL_B) ^ INVERT_RL) ? 1 : -1; }
-void isrRR() { countRR += (digitalRead(encRR_B) ^ INVERT_RR) ? 1 : -1; }
-
-// ==========================================
-//                SETUP
-// ==========================================
 void setup() {
   Serial.begin(SERIAL_BAUD);
-  Serial.setTimeout(5);
+  Serial.setTimeout(20);
 
-  pinMode(enA_Left, OUTPUT); pinMode(in1_Left, OUTPUT); pinMode(in2_Left, OUTPUT);
-  pinMode(enB_Left, OUTPUT); pinMode(in3_Left, OUTPUT); pinMode(in4_Left, OUTPUT);
-  pinMode(enA_Right, OUTPUT); pinMode(in1_Right, OUTPUT); pinMode(in2_Right, OUTPUT);
-  pinMode(enB_Right, OUTPUT); pinMode(in3_Right, OUTPUT); pinMode(in4_Right, OUTPUT);
+  pinMode(enFL, OUTPUT); pinMode(inFL1, OUTPUT); pinMode(inFL2, OUTPUT);
+  pinMode(enRL, OUTPUT); pinMode(inRL1, OUTPUT); pinMode(inRL2, OUTPUT);
+  pinMode(enFR, OUTPUT); pinMode(inFR1, OUTPUT); pinMode(inFR2, OUTPUT);
+  pinMode(enRR, OUTPUT); pinMode(inRR1, OUTPUT); pinMode(inRR2, OUTPUT);
 
   pinMode(encFL_A, INPUT_PULLUP); pinMode(encFL_B, INPUT_PULLUP);
   pinMode(encFR_A, INPUT_PULLUP); pinMode(encFR_B, INPUT_PULLUP);
@@ -96,28 +73,32 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(encRL_A), isrRL, RISING);
   attachInterrupt(digitalPinToInterrupt(encRR_A), isrRR, RISING);
 
-  stopRobot();
+  stopAll();
   last_cmd_ms = millis();
 }
 
-// ==========================================
-//                 LOOP
-// ==========================================
 void loop() {
-  // Read serial commands
   if (Serial.available() > 0) {
-    char cmd = Serial.read();
-    if (cmd == 'M') {
-      int left_pwm = Serial.parseInt();
-      int right_pwm = Serial.parseInt();
-      applyPwm(left_pwm, right_pwm);
-      last_cmd_ms = millis();
+    String line = Serial.readStringUntil('\n');
+    line.trim();
+    if (line.length() > 0) {
+      char cmd;
+      int left_pwm = 0;
+      int right_pwm = 0;
+      int matched = sscanf(line.c_str(), "%c %d %d", &cmd, &left_pwm, &right_pwm);
+      if (matched == 3 && (cmd == 'M' || cmd == 'm')) {
+        drive(left_pwm, right_pwm);
+        last_cmd_ms = millis();
+        Serial.print("RX ");
+        Serial.print(left_pwm);
+        Serial.print(" ");
+        Serial.println(right_pwm);
+      }
     }
   }
 
-  // Safety stop on timeout
   if (millis() - last_cmd_ms > COMMAND_TIMEOUT_MS) {
-    stopRobot();
+    stopAll();
   }
 
   // Emit encoder counts at ~20 Hz
@@ -133,31 +114,42 @@ void loop() {
 }
 
 // ==========================================
-//           MOTOR CONTROL HELPERS
+//            INTERRUPT ISRs
 // ==========================================
-void setSide(int pwm, int in1, int in2, int in3, int in4, int enA, int enB) {
-  if (pwm > 0) {
-    digitalWrite(in1, HIGH); digitalWrite(in2, LOW);
-    digitalWrite(in3, LOW);  digitalWrite(in4, HIGH);
-  } else if (pwm < 0) {
-    digitalWrite(in1, LOW);  digitalWrite(in2, HIGH);
-    digitalWrite(in3, HIGH); digitalWrite(in4, LOW);
+void isrFL() { countFL += (digitalRead(encFL_B) ^ INVERT_ENC_FL) ? 1 : -1; }
+void isrFR() { countFR += (digitalRead(encFR_B) ^ INVERT_ENC_FR) ? 1 : -1; }
+void isrRL() { countRL += (digitalRead(encRL_B) ^ INVERT_ENC_RL) ? 1 : -1; }
+void isrRR() { countRR += (digitalRead(encRR_B) ^ INVERT_ENC_RR) ? 1 : -1; }
+
+void setMotor(int pwm, bool invert, int in1, int in2, int en) {
+  int p = invert ? -pwm : pwm;
+
+  if (p > 0) {
+    digitalWrite(in1, HIGH);
+    digitalWrite(in2, LOW);
+  } else if (p < 0) {
+    digitalWrite(in1, LOW);
+    digitalWrite(in2, HIGH);
   } else {
-    digitalWrite(in1, LOW); digitalWrite(in2, LOW);
-    digitalWrite(in3, LOW); digitalWrite(in4, LOW);
+    digitalWrite(in1, LOW);
+    digitalWrite(in2, LOW);
   }
 
-  int power = abs(pwm);
+  int power = abs(p);
   if (power > 255) power = 255;
-  analogWrite(enA, power);
-  analogWrite(enB, power);
+  analogWrite(en, power);
 }
 
-void applyPwm(int left_pwm, int right_pwm) {
-  setSide(left_pwm, in1_Left, in2_Left, in3_Left, in4_Left, enA_Left, enB_Left);
-  setSide(right_pwm, in1_Right, in2_Right, in3_Right, in4_Right, enA_Right, enB_Right);
+void drive(int left_pwm, int right_pwm) {
+  setMotor(left_pwm,  INVERT_FL, inFL1, inFL2, enFL);
+  setMotor(left_pwm,  INVERT_RL, inRL1, inRL2, enRL);
+  setMotor(right_pwm, INVERT_FR, inFR1, inFR2, enFR);
+  setMotor(right_pwm, INVERT_RR, inRR1, inRR2, enRR);
 }
 
-void stopRobot() {
-  applyPwm(0, 0);
+void stopAll() {
+  setMotor(0, false, inFL1, inFL2, enFL);
+  setMotor(0, false, inRL1, inRL2, enRL);
+  setMotor(0, false, inFR1, inFR2, enFR);
+  setMotor(0, false, inRR1, inRR2, enRR);
 }

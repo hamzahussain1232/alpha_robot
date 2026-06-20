@@ -1,0 +1,42 @@
+object_detector_node:
+  ros__parameters:
+    use_sim_time: false
+    image_topic: "/camera/image_raw"
+    amcl_pose_topic: "/amcl_pose"
+    detections_topic: "/perception/detections"
+    status_topic: "/task/status"
+    annotated_image_topic: "/perception/annotated_image"
+    publish_annotated_image: false
+    publish_annotated_image_compressed: true
+    annotated_image_jpeg_quality: 65
+
+    # Clean bootstrap profile: camera-only object detection on the Pi.
+    backend: "onnxruntime"
+    model_path: "/home/hh89669411/ros2_ws/models/yolo11n.onnx"
+    device: "cpu"
+    onnx_input_width: 320
+    onnx_input_height: 320
+    nms_threshold: 0.45
+
+    confidence_threshold: 0.35
+    target_labels:
+      - "person"
+      - "cup"
+      - "bottle"
+      - "book"
+      - "cell phone"
+      - "remote"
+      - "chair"
+      - "backpack"
+      - "sports ball"
+    max_objects: 12
+    process_every_n_frames: 2
+    publish_empty_detections: true
+
+    # For the first intelligence phase, do not require map pose.
+    enable_pose_estimation: false
+    require_robot_pose_for_detections: false
+    camera_hfov_deg: 62.0
+    default_distance_m: 0.9
+    label_distance_json: '{"cup":0.7,"bottle":0.8,"book":0.7,"remote":0.6,"cell phone":0.55}'
+    class_aliases_json: '{"cup":["mug","coffee cup"],"bottle":["water bottle"]}'

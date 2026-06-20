@@ -1,68 +1,81 @@
-import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, LogInfo, IncludeLaunchDescription
-from launch.conditions import IfCondition
+from launch.actions import DeclareLaunchArgument, LogInfo, OpaqueFunction
 from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 def generate_launch_description():
-
     package_name = 'articubot_one'
 
-    # ARGS
-    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
-    # If true, launches the GUI sliders to move joints manually. 
-    # Great for testing URDF, but turn off for Simulation/Real Robot.
-    show_gui = LaunchConfiguration('show_gui', default='false') 
-    
-    rviz_config_file = LaunchConfiguration(
-        'rviz_config',
-        default=PathJoinSubstitution([FindPackageShare(package_name), 'config', 'map.rviz'])
-    )
+    def launch_setup(context, *args, **kwargs):
+        use_sim_time_raw = LaunchConfiguration('use_sim_time').perform(context).strip().lower()
+        use_sim_time = use_sim_time_raw in ('1', 'true', 'yes', 'on')
+        show_gui = LaunchConfiguration('show_gui').perform(context)
+        mode = LaunchConfiguration('mode').perform(context)
+        rviz_config_override = LaunchConfiguration('rviz_config').perform(context).strip()
 
-    # 1. RVIZ NODE
-    rviz_node = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        arguments=['-d', rviz_config_file],
-        parameters=[{'use_sim_time': use_sim_time}],
-        output='screen'
-    )
+        if rviz_config_override:
+            rviz_config_file = rviz_config_override
+        elif mode in ('navigation', 'amcl'):
+            rviz_config_file = PathJoinSubstitution(
+                [FindPackageShare(package_name), 'config', 'main.rviz']
+            ).perform(context)
+        elif mode == 'mapping':
+            rviz_config_file = PathJoinSubstitution(
+                [FindPackageShare(package_name), 'config', 'mapping_laptop_compressed.rviz']
+            ).perform(context)
+        elif mode == 'perception':
+            rviz_config_file = PathJoinSubstitution(
+                [FindPackageShare(package_name), 'config', 'perception_laptop.rviz']
+            ).perform(context)
+        else:
+            rviz_config_file = PathJoinSubstitution(
+                [FindPackageShare(package_name), 'config', 'map.rviz']
+            ).perform(context)
 
-    # 2. JOINT STATE PUBLISHER GUI
-    # Only runs if 'show_gui' is true. 
-    # Allows you to manually inspect the robot model.
-    joint_state_publisher_gui = Node(
-        package='joint_state_publisher_gui',
-        executable='joint_state_publisher_gui',
-        condition=IfCondition(show_gui),
-        output='screen'
-    )
+        actions = [
+            LogInfo(msg=[f'============ STARTING RVIZ VISUALIZATION ({mode}) ============']),
+        ]
 
-    # NOTE: We REMOVED 'rsp.launch.py' and 'joystick.launch.py' from here.
-    # Why? Because drive_sim.launch.py and launch_robot.launch.py ALREADY run them.
-    # Including them here would cause "Double Node" errors.
+        if show_gui == 'true':
+            actions.append(
+                Node(
+                    package='joint_state_publisher_gui',
+                    executable='joint_state_publisher_gui',
+                    output='screen',
+                )
+            )
+
+        actions.append(
+            Node(
+                package='rviz2',
+                executable='rviz2',
+                name='rviz2',
+                arguments=['-d', rviz_config_file],
+                parameters=[{'use_sim_time': use_sim_time}],
+                output='screen',
+            )
+        )
+
+        return actions
 
     return LaunchDescription([
         DeclareLaunchArgument(
             'use_sim_time',
-            default_value='true',
+            default_value='false',
             description='Use simulation (Gazebo) clock if true'),
-        
         DeclareLaunchArgument(
             'show_gui',
             default_value='false',
             description='Show Joint State Publisher GUI to move arm manually'),
         DeclareLaunchArgument(
+            'mode',
+            default_value='mapping',
+            choices=['drive', 'mapping', 'amcl', 'navigation', 'perception'],
+            description='Select the RViz preset that matches the robot workflow'),
+        DeclareLaunchArgument(
             'rviz_config',
-            default_value=PathJoinSubstitution([FindPackageShare(package_name), 'config', 'map.rviz']),
-            description='Path to RViz config file'),
-
-        LogInfo(msg=['============ STARTING RVIZ VISUALIZATION ============']),
-
-        joint_state_publisher_gui,
-        rviz_node,
+            default_value='',
+            description='Optional explicit RViz config file. Leave empty for auto selection by mode'),
+        OpaqueFunction(function=launch_setup),
     ])

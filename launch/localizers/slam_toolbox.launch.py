@@ -8,7 +8,7 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     # Keep args compatible with parent launch files.
     namespace = LaunchConfiguration('namespace', default='')
-    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
+    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
 
     slam_params_file = PathJoinSubstitution(
         [FindPackageShare('articubot_one'), 'config', 'mapper_params_online_async.yaml']
@@ -30,10 +30,9 @@ def generate_launch_description():
 
     return LaunchDescription([
         DeclareLaunchArgument('namespace', default_value=''),
-        DeclareLaunchArgument('use_sim_time', default_value='true'),
+        DeclareLaunchArgument('use_sim_time', default_value='false'),
         LogInfo(msg=['============ STARTING SLAM TOOLBOX ============']),
         LogInfo(msg=['Params: ', slam_params_file]),
         LogInfo(msg=['Namespace: ', namespace]),
         slam_toolbox_launch,
     ])
-

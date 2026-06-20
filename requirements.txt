@@ -1,0 +1,42 @@
+# Autonomous Fetch System Dependencies
+# Install with: pip install -r requirements.txt
+
+# ==================== WEB SERVER ====================
+Flask==3.0.0                    # Web server for mobile app
+flask-cors==4.0.0               # Cross-origin requests from mobile
+
+# ==================== ROBOTICS ====================
+rclpy                           # ROS2 Python client library
+ros2cli                         # ROS2 command line tools
+numpy                           # Numerical computing
+
+# ==================== COMPUTER VISION ====================
+opencv-python==4.8.1.78         # Image processing
+ultralytics==8.0.224            # YOLOv8 object detection
+torch==2.1.1                    # PyTorch (for YOLOv8)
+torchvision==0.16.1             # Vision models
+
+# ==================== ONNX RUNTIME ====================
+onnxruntime==1.16.3             # Fast inference engine
+onnx==1.14.1                    # ONNX model format
+
+# ==================== VOICE & SPEECH (Optional, for future) ====================
+# speech_recognition==3.10.0    # Voice recognition
+# pyttsx3==2.90                 # Text-to-speech
+
+# ==================== UTILITIES ====================
+python-dotenv==1.0.0            # Environment variables
+pyyaml==6.0.1                   # YAML configuration files
+pydantic==2.4.2                 # Data validation
+requests==2.31.0                # HTTP client
+
+# ==================== DEBUGGING ====================
+pyserial==3.5                   # Serial communication (for arm debugging)
+
+# ==================== NOTES ====================
+# For faster inference on Raspberry Pi, consider:
+# - tensorflow-lite (instead of full TensorFlow)
+# - quantized YOLOv8 models
+# - Edge TPU acceleration (Coral)
+#
+# To optimize for Pi, pin versions carefully and test on target hardware

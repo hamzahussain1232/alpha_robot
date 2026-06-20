@@ -11,7 +11,7 @@ def generate_launch_description():
 
     # ARGS
     namespace = LaunchConfiguration('namespace', default='')
-    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
+    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
     map_file = LaunchConfiguration('map', default='')
     localizer_type = LaunchConfiguration('localizer_type', default='slam_toolbox')
 
@@ -59,7 +59,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         DeclareLaunchArgument('namespace', default_value=''),
-        DeclareLaunchArgument('use_sim_time', default_value='true'),
+        DeclareLaunchArgument('use_sim_time', default_value='false'),
         
         DeclareLaunchArgument(
             'localizer_type',

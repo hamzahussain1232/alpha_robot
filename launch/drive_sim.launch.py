@@ -170,6 +170,7 @@ def generate_launch_description():
         launch_arguments={
             'use_sim_time': use_sim_time,
             'namespace': namespace,
+            'include_arm': spawn_arm_controller,
             'lidar_offset_x': lidar_offset_x,
             'lidar_offset_y': lidar_offset_y,
             'lidar_offset_z': lidar_offset_z,
@@ -198,10 +199,7 @@ def generate_launch_description():
         parameters=[{'use_sim_time': use_sim_time}],
         output='screen')
 
-    # 6. ARM TELEOP (Manual Terminal)
-    # Allows you to run: "ros2 run articubot_one arm_teleop.py" manually
-    
-    # 7. RVIZ
+    # 6. RVIZ
     rviz_and_joystick = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([FindPackageShare(package_name), 'launch', 'launch_rviz.launch.py'])

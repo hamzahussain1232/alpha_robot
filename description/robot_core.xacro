@@ -1,17 +1,20 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" >
     <xacro:include filename="inertial_macros.xacro" />
-    <!-- Real hardware body size: 32 cm x 27 cm (without tyres). -->
-    <xacro:property name="chassis_length" value="0.32"/>
-    <xacro:property name="chassis_width" value="0.27"/>
-    <!-- Body top target from ground is ~12.6 cm with current tyres. -->
-    <xacro:property name="chassis_height" value="0.0795"/>
+    <!-- Real hardware body size (base plate). -->
+    <xacro:property name="chassis_length" value="0.293"/>
+    <!-- Base plate width (no wheels). -->
+    <xacro:property name="chassis_width" value="0.22"/>
+    <!-- Top of base is ~0.21 m above ground. -->
+    <xacro:property name="chassis_height" value="0.1735"/>
     <xacro:property name="chassis_mass" value="3.0"/>
-    <xacro:property name="wheel_radius" value="0.0425"/>
-    <xacro:property name="wheel_thickness" value="0.04"/>
+    <xacro:property name="wheel_radius" value="0.0325"/>
+    <xacro:property name="wheel_thickness" value="0.027"/>
     <xacro:property name="wheel_mass" value="0.2"/>
+    <!-- Wheelbase 0.22 m -> half is 0.11 m. -->
     <xacro:property name="wheel_offset_x" value="0.11"/>
-    <xacro:property name="wheel_offset_y" value="${(chassis_width / 2.0) + (wheel_thickness / 2.0)}"/>
+    <!-- Wheel separation 0.236 m -> half is 0.118 m. -->
+    <xacro:property name="wheel_offset_y" value="0.118"/>
     <xacro:property name="chassis_ground_clearance" value="0.004"/>
 
     <link name="base_link"></link>

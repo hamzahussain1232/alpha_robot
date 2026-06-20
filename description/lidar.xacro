@@ -1,15 +1,18 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" >
 
-    <xacro:arg name="lidar_offset_x" default="-0.08"/>
+    <xacro:arg name="lidar_offset_x" default="-0.0885"/>
     <xacro:arg name="lidar_offset_y" default="0.0"/>
     <!-- Relative height above chassis top (meters), to LiDAR center. -->
     <xacro:arg name="lidar_offset_z" default="0.0275"/>
+    <!-- Yaw of the physical LiDAR mounting relative to the robot front. -->
+    <xacro:arg name="lidar_yaw" default="0.0"/>
     <xacro:arg name="lidar_min_angle" default="-3.14159"/>
     <xacro:arg name="lidar_max_angle" default="3.14159"/>
     <xacro:property name="lidar_offset_x_val" value="$(arg lidar_offset_x)"/>
     <xacro:property name="lidar_offset_y_val" value="$(arg lidar_offset_y)"/>
     <xacro:property name="lidar_offset_z_val" value="$(arg lidar_offset_z)"/>
+    <xacro:property name="lidar_yaw_val" value="$(arg lidar_yaw)"/>
     <!-- RPLidar A1 physical envelope from provided dimensions: 70mm diameter, ~55mm height. -->
     <xacro:property name="lidar_body_radius" value="0.035"/>
     <xacro:property name="lidar_body_height" value="0.055"/>
@@ -18,7 +21,7 @@
     <joint name="laser_joint" type="fixed">
         <parent link="chassis"/>
         <child link="laser_frame"/>
-        <origin xyz="${lidar_offset_x_val} ${lidar_offset_y_val} ${chassis_height + lidar_offset_z_val}" rpy="0 0 0"/>
+        <origin xyz="${lidar_offset_x_val} ${lidar_offset_y_val} ${chassis_height + lidar_offset_z_val}" rpy="0 0 ${lidar_yaw_val}"/>
     </joint>
     <gazebo reference="laser_joint">
     <preserveFixedJoint>true</preserveFixedJoint>

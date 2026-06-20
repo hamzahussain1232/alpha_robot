@@ -63,7 +63,7 @@ def generate_launch_description():
             DeclareLaunchArgument("world", default_value=world),
             LogInfo(msg=["=== LiDAR height test world ==="]),
             LogInfo(msg=["Tip center: lidar_offset_x:=-0.08 lidar_offset_y:=0.0"]),
-            LogInfo(msg=["Tip test: lidar_offset_x:=-0.08 (front), lidar_offset_y:=0.02 (left)"]),
+            LogInfo(msg=["Tip test: lidar_offset_x:=-0.08 (rear), lidar_offset_y:=0.02 (left)"]),
             LogInfo(msg=["Tip height: lidar_offset_z 0.00, 0.015, 0.0275, 0.04"]),
             workflow,
         ]

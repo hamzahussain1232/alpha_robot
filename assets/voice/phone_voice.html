@@ -1,0 +1,203 @@
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Robot Voice Control</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #22c55e;
+      --accent-2: #38bdf8;
+    }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: radial-gradient(1200px 800px at 20% 0%, #1f2937, #0f172a);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      width: 100%;
+      max-width: 560px;
+      background: var(--card);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+    h1 {
+      font-size: 20px;
+      margin: 0 0 10px 0;
+    }
+    .row { margin: 12px 0; }
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #374151;
+      background: #0b1220;
+      color: var(--text);
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    button {
+      border: 0;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .start { background: var(--accent); color: #052e16; }
+    .stop { background: #ef4444; color: #fff; }
+    .send { background: var(--accent-2); color: #042f2e; }
+    .status { font-size: 13px; color: var(--muted); }
+    .box {
+      background: #0b1220;
+      border: 1px solid #1f2937;
+      border-radius: 10px;
+      padding: 10px;
+      min-height: 48px;
+      font-size: 14px;
+    }
+    .checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+    .help {
+      font-size: 12px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Robot Voice Control</h1>
+
+    <div class="row">
+      <label>Pi HTTP endpoint</label>
+      <input id="endpoint" type="text" value="http://192.168.1.20:5000/say" />
+      <div class="help">Replace with your Pi IP. Example: http://192.168.1.20:5000/say</div>
+    </div>
+
+    <div class="row checkbox">
+      <input id="wake" type="checkbox" checked />
+      <span>Auto-prepend wake word "robot"</span>
+    </div>
+
+    <div class="row actions">
+      <button class="start" id="startBtn">Start Listening</button>
+      <button class="stop" id="stopBtn" disabled>Stop</button>
+      <button class="send" id="sendBtn">Send Text</button>
+    </div>
+
+    <div class="row">
+      <label>Live transcript</label>
+      <div id="live" class="box"></div>
+    </div>
+
+    <div class="row">
+      <label>Last sent</label>
+      <div id="sent" class="box"></div>
+    </div>
+
+    <div class="row status" id="status">Idle</div>
+  </div>
+
+  <script>
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const live = document.getElementById('live');
+    const sent = document.getElementById('sent');
+    const status = document.getElementById('status');
+    const endpoint = document.getElementById('endpoint');
+    const wake = document.getElementById('wake');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const sendBtn = document.getElementById('sendBtn');
+
+    let recognition = null;
+    let lastFinal = '';
+
+    function setStatus(text) { status.textContent = text; }
+
+    function sendText(text) {
+      if (text === null || text === '') return;
+      const finalText = wake.checked ? 'robot ' + text : text;
+      const url = endpoint.value + '?text=' + encodeURIComponent(finalText);
+      fetch(url).then(() => {
+        sent.textContent = finalText;
+        setStatus('Sent');
+      }).catch(() => {
+        setStatus('Send failed - check Pi IP and network');
+      });
+    }
+
+    function startRecognition() {
+      if (SpeechRecognition === undefined) {
+        setStatus('SpeechRecognition not supported. Use Chrome on Android.');
+        return;
+      }
+      recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.interimResults = true;
+      recognition.continuous = true;
+
+      recognition.onstart = () => {
+        setStatus('Listening...');
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+      };
+
+      recognition.onresult = (event) => {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const res = event.results[i];
+          if (res.isFinal) {
+            lastFinal = res[0].transcript.trim();
+            sendText(lastFinal);
+          } else {
+            interim += res[0].transcript;
+          }
+        }
+        live.textContent = interim || lastFinal;
+      };
+
+      recognition.onerror = () => {
+        setStatus('Mic error. Check permissions.');
+      };
+
+      recognition.onend = () => {
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        setStatus('Idle');
+      };
+
+      recognition.start();
+    }
+
+    function stopRecognition() {
+      if (recognition) {
+        recognition.stop();
+      }
+    }
+
+    startBtn.addEventListener('click', startRecognition);
+    stopBtn.addEventListener('click', stopRecognition);
+    sendBtn.addEventListener('click', () => {
+      const text = prompt('Enter command text:');
+      if (text) sendText(text.trim());
+    });
+  </script>
+</body>
+</html>

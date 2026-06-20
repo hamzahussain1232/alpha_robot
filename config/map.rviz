@@ -52,7 +52,7 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: true
-        base_footprint:
+        chassis:
           Value: true
         base_link:
           Value: true
@@ -64,17 +64,17 @@ Visualization Manager:
           Value: true
         imu_link:
           Value: true
-        laser_link:
+        laser_frame:
           Value: true
         left_caster_wheel:
           Value: true
-        left_wheel:
+        front_left_wheel:
           Value: true
         odom:
           Value: true
         right_caster_wheel:
           Value: true
-        right_wheel:
+        front_right_wheel:
           Value: true
       Marker Scale: 1
       Name: TF
@@ -84,7 +84,7 @@ Visualization Manager:
       Tree:
         odom:
           base_link:
-            base_footprint:
+            chassis:
               {}
             camera_link:
               camera_link_optical:
@@ -93,15 +93,15 @@ Visualization Manager:
               {}
             imu_link:
               {}
-            laser_link:
+            laser_frame:
               {}
             left_caster_wheel:
               {}
-            left_wheel:
+            front_left_wheel:
               {}
             right_caster_wheel:
               {}
-            right_wheel:
+            front_right_wheel:
               {}
       Update Interval: 0
       Value: true
@@ -123,7 +123,7 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        base_footprint:
+        chassis:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -152,7 +152,7 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        laser_link:
+        laser_frame:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -162,7 +162,7 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        left_wheel:
+        front_left_wheel:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -172,7 +172,7 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        right_wheel:
+        front_right_wheel:
           Alpha: 1
           Show Axes: false
           Show Trail: false

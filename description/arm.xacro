@@ -1,64 +1,56 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" >
 
-    <!-- Real hardware profile from provided kit sheet:
-         base plate ~9cm x 8.4cm, overall chain length target ~50.5cm. -->
-    <xacro:property name="arm_base_radius" value="0.032"/>
+    <!-- Real hardware profile: base plate ~9cm x 4cm. -->
+    <xacro:property name="arm_base_size_x" value="0.09"/>
+    <xacro:property name="arm_base_size_y" value="0.04"/>
     <xacro:property name="arm_base_length" value="0.030"/>
     <xacro:property name="arm_base_mass" value="0.20"/>
 
-    <xacro:property name="link_1_radius" value="0.022"/>
-    <xacro:property name="link_1_length" value="0.050"/>
+    <xacro:property name="link_1_radius" value="0.0175"/>
+    <xacro:property name="link_1_length" value="0.025"/>
     <xacro:property name="link_1_mass" value="0.10"/>
 
-    <xacro:property name="link_2_radius" value="0.020"/>
-    <xacro:property name="link_2_length" value="0.140"/>
+    <xacro:property name="link_2_radius" value="0.0175"/>
+    <xacro:property name="link_2_length" value="0.100"/>
     <xacro:property name="link_2_mass" value="0.15"/>
 
-    <xacro:property name="link_3_radius" value="0.018"/>
-    <xacro:property name="link_3_length" value="0.125"/>
+    <xacro:property name="link_3_radius" value="0.0175"/>
+    <xacro:property name="link_3_length" value="0.105"/>
     <xacro:property name="link_3_mass" value="0.13"/>
 
-    <xacro:property name="link_4_radius" value="0.016"/>
+    <xacro:property name="link_4_radius" value="0.0175"/>
     <xacro:property name="link_4_length" value="0.070"/>
     <xacro:property name="link_4_mass" value="0.08"/>
 
-    <xacro:property name="link_5_radius" value="0.016"/>
-    <xacro:property name="link_5_length" value="0.050"/>
+    <xacro:property name="link_5_radius" value="0.0175"/>
+    <xacro:property name="link_5_length" value="0.030"/>
     <xacro:property name="link_5_mass" value="0.06"/>
 
-    <xacro:property name="link_6_radius" value="0.022"/>
-    <xacro:property name="link_6_length" value="0.040"/>
+    <xacro:property name="link_6_radius" value="0.0175"/>
+    <xacro:property name="link_6_length" value="0.084"/>
     <xacro:property name="link_6_mass" value="0.05"/>
 
     <joint name="arm_base_joint" type="fixed">
         <parent link="chassis"/>
         <child link="arm_base_link"/>
-        <origin xyz="0.07 0 ${chassis_height}" rpy="0 0 0"/>
+        <!-- Arm base center is 7.5 cm from front; robot half-length is 14.65 cm. -->
+        <origin xyz="0.0715 0 ${chassis_height}" rpy="0 0 0"/>
     </joint>
 
     <link name="arm_base_link">
         <visual>
             <origin xyz="0 0 ${arm_base_length/2}"/>
-            <geometry><cylinder radius="${arm_base_radius}" length="${arm_base_length}"/></geometry>
+            <geometry><box size="${arm_base_size_x} ${arm_base_size_y} ${arm_base_length}"/></geometry>
             <material name="orange"><color rgba="1 0.3 0.1 1"/></material>
-        </visual>
-        <visual>
-            <origin xyz="0 0 0.002"/>
-            <geometry><box size="0.09 0.084 0.004"/></geometry>
-            <material name="grey"/>
         </visual>
         <collision>
             <origin xyz="0 0 ${arm_base_length/2}"/>
-            <geometry><cylinder radius="${arm_base_radius}" length="${arm_base_length}"/></geometry>
+            <geometry><box size="${arm_base_size_x} ${arm_base_size_y} ${arm_base_length}"/></geometry>
         </collision>
-        <collision>
-            <origin xyz="0 0 0.002"/>
-            <geometry><box size="0.09 0.084 0.004"/></geometry>
-        </collision>
-        <xacro:inertial_cylinder mass="${arm_base_mass}" length="${arm_base_length}" radius="${arm_base_radius}">
+        <xacro:inertial_box mass="${arm_base_mass}" x="${arm_base_size_x}" y="${arm_base_size_y}" z="${arm_base_length}">
             <origin xyz="0 0 ${arm_base_length/2}" rpy="0 0 0"/>
-        </xacro:inertial_cylinder>
+        </xacro:inertial_box>
     </link>
 
     <joint name="joint_1" type="revolute">

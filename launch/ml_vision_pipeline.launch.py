@@ -14,9 +14,10 @@ def generate_launch_description():
 
     launch_camera = LaunchConfiguration("launch_camera", default="true")
     video_device = LaunchConfiguration("video_device", default="/dev/video0")
+    camera_driver = LaunchConfiguration("camera_driver", default="libcamera")
     camera_params = LaunchConfiguration(
         "camera_params",
-        default=PathJoinSubstitution([FindPackageShare(package_name), "config", "camera_v4l2_params.yaml"]),
+        default=PathJoinSubstitution([FindPackageShare(package_name), "config", "camera_libcamera_params.yaml"]),
     )
 
     perception_params_sim = LaunchConfiguration(
@@ -50,7 +51,11 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([FindPackageShare(package_name), "launch", "camera.launch.py"])
         ),
-        launch_arguments={"video_device": video_device, "params_file": camera_params}.items(),
+        launch_arguments={
+            "driver": camera_driver,
+            "video_device": video_device,
+            "params_file": camera_params,
+        }.items(),
         condition=IfCondition(
             PythonExpression(
                 ["'", launch_camera, "' == 'true' and '", hardware_mode, "' == 'real'"]
@@ -94,6 +99,7 @@ def generate_launch_description():
             DeclareLaunchArgument("use_sim_time", default_value="false"),
             DeclareLaunchArgument("launch_camera", default_value="true"),
             DeclareLaunchArgument("video_device", default_value="/dev/video0"),
+            DeclareLaunchArgument("camera_driver", default_value="libcamera"),
             DeclareLaunchArgument("camera_params", default_value=camera_params),
             DeclareLaunchArgument("perception_params_sim", default_value=perception_params_sim),
             DeclareLaunchArgument("perception_params_real", default_value=perception_params_real),

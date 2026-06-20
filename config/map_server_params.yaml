@@ -14,3 +14,11 @@ map_saver:
     occupied_thresh_default: 0.65 # Occupied space minimum probability threshold value for occupancy grid.
     map_subscribe_transient_local: True # Setting this to true means getting more reliable, complete map data but might take slightly longer.
 
+# save_map.launch.py starts nav2_map_server/map_saver_cli with node name "map_saver_cli".
+# Duplicate the settings under that node name so the CLI actually receives them.
+map_saver_cli:
+  ros__parameters:
+    save_map_timeout: 5.0
+    free_thresh_default: 0.25
+    occupied_thresh_default: 0.65
+    map_subscribe_transient_local: True

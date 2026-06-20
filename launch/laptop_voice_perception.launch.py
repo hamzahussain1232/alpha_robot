@@ -11,9 +11,10 @@ def generate_launch_description():
 
     use_sim_time = LaunchConfiguration("use_sim_time", default="false")
     video_device = LaunchConfiguration("video_device", default="/dev/video0")
+    camera_driver = LaunchConfiguration("camera_driver", default="libcamera")
     camera_params = LaunchConfiguration(
         "camera_params",
-        default=PathJoinSubstitution([FindPackageShare(package_name), "config", "camera_v4l2_params.yaml"]),
+        default=PathJoinSubstitution([FindPackageShare(package_name), "config", "camera_libcamera_params.yaml"]),
     )
 
     use_mic = LaunchConfiguration("use_mic", default="true")
@@ -49,7 +50,11 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([FindPackageShare(package_name), "launch", "camera.launch.py"])
         ),
-        launch_arguments={"video_device": video_device, "params_file": camera_params}.items(),
+        launch_arguments={
+            "driver": camera_driver,
+            "video_device": video_device,
+            "params_file": camera_params,
+        }.items(),
     )
 
     voice_launch = IncludeLaunchDescription(
@@ -90,6 +95,7 @@ def generate_launch_description():
         [
             DeclareLaunchArgument("use_sim_time", default_value="false"),
             DeclareLaunchArgument("video_device", default_value="/dev/video0"),
+            DeclareLaunchArgument("camera_driver", default_value="libcamera"),
             DeclareLaunchArgument("camera_params", default_value=camera_params),
             DeclareLaunchArgument("use_mic", default_value="true"),
             DeclareLaunchArgument("voice_params", default_value=voice_params),

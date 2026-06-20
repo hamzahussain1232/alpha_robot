@@ -18,10 +18,22 @@ twist_mux:
         topic   : cmd_vel_nav
         timeout : 0.5
         priority: 20
+      web:
+        topic   : web_vel
+        timeout : 0.5
+        priority: 95
       keyboard:
         topic   : key_vel
         timeout : 0.5
         priority: 90
+      joystick:
+        topic   : cmd_vel_joy
+        timeout : 0.5
+        priority: 80
+      joy_stamped:
+        topic   : joy_vel
+        timeout : 0.5
+        priority: 80
 
 #
 # /opt/ros/jazzy/share/twist_mux/config/twist_mux_locks.yaml

@@ -1,0 +1,57 @@
+red_object_picker:
+  ros__parameters:
+    image_topic: "/camera/image_raw"
+    joint_state_topic: "/joint_states"
+    command_topic: "/arm_controller/joint_trajectory"
+    debug_image_topic: "/perception/red_picker/debug_image"
+    debug_compressed_topic: "/perception/red_picker/debug_image/compressed"
+    target_topic: "/perception/red_picker/target"
+    status_topic: "/task/status"
+    publish_raw_debug_image: false
+    publish_compressed_debug_image: true
+    compressed_jpeg_quality: 70
+
+    process_every_n_frames: 2
+    move_to_scan_pose_on_startup: true
+    move_to_scan_pose_on_lost: false
+    lost_target_timeout_sec: 1.5
+    command_period_sec: 0.7
+    move_duration_sec: 0.8
+    pause_after_move_sec: 0.9
+    pause_after_grip_sec: 1.2
+
+    lower_red1: [0, 120, 70]
+    upper_red1: [10, 255, 255]
+    lower_red2: [170, 120, 70]
+    upper_red2: [180, 255, 255]
+    blur_kernel_size: 5
+    morph_open_iterations: 1
+    morph_close_iterations: 2
+    min_contour_area_px: 500.0
+
+    center_tolerance_x: 0.10
+    center_tolerance_y: 0.12
+    approach_fill_ratio: 0.06
+    pick_fill_ratio_threshold: 0.11
+    auto_pick: true
+
+    scan_pose: [0.0, 0.45, -1.0, 0.45, 0.0, 0.0]
+    carry_pose: [0.0, 0.15, -0.7, 0.35, 0.0, 1.0]
+    gripper_open_rad: 0.0
+    gripper_close_rad: 1.0
+
+    x_joint_index: 0
+    y_joint_index: 1
+    reach_joint_index: 2
+    lift_joint_index: 1
+    gripper_joint_index: 5
+
+    # If the arm moves the wrong direction while aligning, flip the sign here.
+    x_joint_gain: -0.35
+    y_joint_gain: 0.25
+    reach_step_rad: -0.08
+    pregrasp_reach_delta_rad: -0.12
+    lift_delta_rad: -0.25
+
+    command_joint_min_rad: [-1.57, -1.57, -1.57, -1.57, -1.57, -1.57]
+    command_joint_max_rad: [1.57, 1.57, 1.57, 1.57, 1.57, 1.57]

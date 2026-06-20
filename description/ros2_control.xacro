@@ -56,14 +56,7 @@
             <state_interface name="velocity"/>
             <state_interface name="position"/>
         </joint>
-        <joint name="camera_joint">
-            <command_interface name="position">
-                <param name="min">-0.70</param>
-                <param name="max">0.35</param>
-            </command_interface>
-            <state_interface name="position"/>
-            <state_interface name="velocity"/>
-        </joint>
+        <xacro:if value="$(arg include_arm)">
         <joint name="joint_1">
             <command_interface name="position">
                 <param name="min">-3.14</param>
@@ -117,6 +110,7 @@
             <state_interface name="position"/>
             <state_interface name="velocity"/>
         </joint>
+        </xacro:if>
     </ros2_control>
 
     <gazebo>

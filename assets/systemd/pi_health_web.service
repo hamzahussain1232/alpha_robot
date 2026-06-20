@@ -1,0 +1,15 @@
+[Unit]
+Description=Robot Alpha Pi Health Web Dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=hh89669411
+WorkingDirectory=/home/hh89669411/ros2_ws
+ExecStart=/home/hh89669411/ros2_ws/install/articubot_one/lib/articubot_one/start_pi_health_web.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
