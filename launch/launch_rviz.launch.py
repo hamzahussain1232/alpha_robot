@@ -28,6 +28,14 @@ def generate_launch_description():
             rviz_config_file = PathJoinSubstitution(
                 [FindPackageShare(package_name), 'config', 'perception_laptop.rviz']
             ).perform(context)
+        elif mode == 'camera':
+            rviz_config_file = PathJoinSubstitution(
+                [FindPackageShare(package_name), 'config', 'camera_view.rviz']
+            ).perform(context)
+        elif mode == 'camera_safe':
+            rviz_config_file = PathJoinSubstitution(
+                [FindPackageShare(package_name), 'config', 'camera_safe.rviz']
+            ).perform(context)
         else:
             rviz_config_file = PathJoinSubstitution(
                 [FindPackageShare(package_name), 'config', 'map.rviz']
@@ -71,7 +79,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'mode',
             default_value='mapping',
-            choices=['drive', 'mapping', 'amcl', 'navigation', 'perception'],
+            choices=['drive', 'mapping', 'amcl', 'navigation', 'perception', 'camera', 'camera_safe'],
             description='Select the RViz preset that matches the robot workflow'),
         DeclareLaunchArgument(
             'rviz_config',

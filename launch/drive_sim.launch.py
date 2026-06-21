@@ -40,8 +40,10 @@ def _cleanup_stale_sim_processes(context, *args, **kwargs):
         r'[o]pt/ros/jazzy/lib/nav2_planner/planner_server',
         r'[o]pt/ros/jazzy/lib/nav2_bt_navigator/bt_navigator',
         r'[o]pt/ros/jazzy/lib/slam_toolbox/async_slam_toolbox_node',
+        r'[o]pt/ros/jazzy/lib/slam_toolbox/sync_slam_toolbox_node',
         r'[o]pt/ros/jazzy/lib/cartographer_ros/cartographer_node',
         r'[o]pt/ros/jazzy/lib/cartographer_ros/cartographer_occupancy_grid_node',
+        r'[a]rticubot_one/lib/articubot_one/stable_scan_cloud.py',
         r'[g]z sim .*articubot_one/.*/assets/worlds/.*\.sdf',
         r'[g]z sim -g',
         r'[r]uby .*/gz_tools_vendor/bin/gz sim .*articubot_one/.*/assets/worlds/.*\.sdf',
@@ -83,9 +85,15 @@ def generate_launch_description():
     use_gz_gui = LaunchConfiguration('use_gz_gui', default='true')
     gz_verbosity = LaunchConfiguration('gz_verbosity', default='1')
     spawn_arm_controller = LaunchConfiguration('spawn_arm_controller', default='false')
-    lidar_offset_x = LaunchConfiguration('lidar_offset_x', default='-0.08')
+    use_ekf = LaunchConfiguration('use_ekf', default='false')
+    controllers_file = LaunchConfiguration(
+        'controllers_file',
+        default=PathJoinSubstitution([FindPackageShare(package_name), 'config', 'my_controllers.yaml'])
+    )
+    lidar_offset_x = LaunchConfiguration('lidar_offset_x', default='-0.0885')
     lidar_offset_y = LaunchConfiguration('lidar_offset_y', default='0.0')
     lidar_offset_z = LaunchConfiguration('lidar_offset_z', default='0.0275')
+    lidar_yaw = LaunchConfiguration('lidar_yaw', default='3.14159')
     cleanup_on_start = LaunchConfiguration('cleanup_on_start', default='true')
     ros_localhost_only = LaunchConfiguration('ros_localhost_only', default='1')
     ros_domain_id = LaunchConfiguration('ros_domain_id', default='42')
@@ -171,9 +179,11 @@ def generate_launch_description():
             'use_sim_time': use_sim_time,
             'namespace': namespace,
             'include_arm': spawn_arm_controller,
+            'controllers_file': controllers_file,
             'lidar_offset_x': lidar_offset_x,
             'lidar_offset_y': lidar_offset_y,
             'lidar_offset_z': lidar_offset_z,
+            'lidar_yaw': lidar_yaw,
         }.items()
     )
 
@@ -299,7 +309,8 @@ def generate_launch_description():
             'use_sim_time': use_sim_time,
             'namespace': namespace,
             'params_file': ekf_params_file,
-        }.items()
+        }.items(),
+        condition=IfCondition(use_ekf),
     )
 
     return LaunchDescription([
@@ -317,8 +328,18 @@ def generate_launch_description():
             description='Spawn arm trajectory controller in simulation'
         ),
         DeclareLaunchArgument(
+            'use_ekf',
+            default_value='false',
+            description='Use robot_localization EKF in simulation. Default false lets diff_drive_controller publish odom TF directly.'
+        ),
+        DeclareLaunchArgument(
+            'controllers_file',
+            default_value=PathJoinSubstitution([FindPackageShare(package_name), 'config', 'my_controllers.yaml']),
+            description='Controller config file used by gz_ros2_control in simulation'
+        ),
+        DeclareLaunchArgument(
             'lidar_offset_x',
-            default_value='0.0',
+            default_value='-0.0885',
             description='LiDAR X offset from chassis center (meters, +front)'
         ),
         DeclareLaunchArgument(
@@ -330,6 +351,11 @@ def generate_launch_description():
             'lidar_offset_z',
             default_value='0.0275',
             description='LiDAR height offset above chassis top (meters)'
+        ),
+        DeclareLaunchArgument(
+            'lidar_yaw',
+            default_value='3.14159',
+            description='LiDAR yaw offset relative to robot front (radians)'
         ),
         DeclareLaunchArgument('cleanup_on_start', default_value='true'),
         DeclareLaunchArgument(

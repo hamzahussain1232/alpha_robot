@@ -1,19 +1,4 @@
-# ROS 2 build artifacts
-build/
-install/
-log/
-**/build/
-**/install/
-**/log/
 
-# Python cache
-__pycache__/
+.vscode
+/build
 *.pyc
-*.pyo
-*.pyd
-
-# Editor / OS clutter
-.vscode/
-.idea/
-.DS_Store
-Desktop/

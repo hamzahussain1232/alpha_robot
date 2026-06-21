@@ -2,9 +2,11 @@
 import json
 import math
 import time
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import rclpy
+from ament_index_python.packages import get_package_prefix
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
@@ -76,6 +78,7 @@ class ObjectDetectorNode(Node):
         self.annotated_image_jpeg_quality = max(10, min(95, self.annotated_image_jpeg_quality))
         self.backend = str(self.get_parameter("backend").value).strip().lower()
         self.model_path = str(self.get_parameter("model_path").value).strip()
+        self.model_path = self._resolve_model_path(self.model_path)
         self.device = str(self.get_parameter("device").value).strip()
         self.onnx_input_width = int(self.get_parameter("onnx_input_width").value)
         self.onnx_input_height = int(self.get_parameter("onnx_input_height").value)
@@ -170,6 +173,41 @@ class ObjectDetectorNode(Node):
             return out
         except Exception:
             return {}
+
+    def _resolve_model_path(self, path_str: str) -> str:
+        path = Path(path_str).expanduser()
+        if not path_str:
+            return ""
+        if path.is_absolute():
+            return str(path)
+
+        candidates = [Path.cwd() / path]
+        try:
+            pkg_prefix = Path(get_package_prefix("articubot_one"))
+            workspace_root = pkg_prefix.parent.parent
+            candidates.extend(
+                [
+                    workspace_root / path,
+                    workspace_root / "models" / path.name,
+                    pkg_prefix / path,
+                ]
+            )
+        except Exception:
+            pass
+
+        script_dir = Path(__file__).resolve().parent
+        candidates.extend(
+            [
+                script_dir / path,
+                script_dir.parent / path,
+                script_dir.parent.parent / path,
+            ]
+        )
+
+        for candidate in candidates:
+            if candidate.exists():
+                return str(candidate)
+        return str(path)
 
     def _parse_class_names(self, s: str) -> Dict[int, str]:
         if not s:

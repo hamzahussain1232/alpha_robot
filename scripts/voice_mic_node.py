@@ -3,9 +3,11 @@ import json
 import os
 import threading
 import time
+from pathlib import Path
 
 import numpy as np
 import rclpy
+from ament_index_python.packages import get_package_prefix
 from rclpy.node import Node
 from std_msgs.msg import String
 
@@ -171,22 +173,48 @@ class VoiceMicNode(Node):
 
     def _resolve_vosk_model_path(self):
         candidates = []
-        if self.vosk_model_path:
-            candidates.append(self.vosk_model_path)
+        requested = Path(self.vosk_model_path).expanduser() if self.vosk_model_path else None
 
-        home = os.path.expanduser("~")
-        candidates.extend(
-            [
-                os.path.join(home, "vosk-model-small-en-us-0.15"),
-                os.path.join(home, "models", "vosk-model-small-en-us-0.15"),
-                os.path.join(home, ".cache", "vosk", "vosk-model-small-en-us-0.15"),
-                "/usr/share/vosk/model",
-            ]
-        )
+        if requested is not None:
+            if requested.is_absolute():
+                candidates.append(requested)
+            else:
+                candidates.extend([Path.cwd() / requested])
+                try:
+                    pkg_prefix = Path(get_package_prefix("articubot_one"))
+                    workspace_root = pkg_prefix.parent.parent
+                    candidates.extend(
+                        [
+                            workspace_root / requested,
+                            workspace_root / "models" / requested.name,
+                            pkg_prefix / requested,
+                        ]
+                    )
+                except Exception:
+                    pass
+                home = Path.home()
+                candidates.extend(
+                    [
+                        home / requested,
+                        home / "models" / requested.name,
+                        home / ".cache" / "vosk" / requested.name,
+                    ]
+                )
+        else:
+            home = Path.home()
+            candidates.extend(
+                [
+                    home / "vosk-model-small-en-us-0.15",
+                    home / "models" / "vosk-model-small-en-us-0.15",
+                    home / ".cache" / "vosk" / "vosk-model-small-en-us-0.15",
+                ]
+            )
+
+        candidates.append(Path("/usr/share/vosk/model"))
 
         for path in candidates:
-            if path and os.path.isdir(path):
-                return path
+            if path and path.is_dir():
+                return str(path)
         return ""
 
     def _init_vosk(self):

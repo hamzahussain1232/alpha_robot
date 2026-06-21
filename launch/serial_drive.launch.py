@@ -18,17 +18,17 @@ def generate_launch_description():
     encoder_cpr = LaunchConfiguration('encoder_cpr', default='330')
     odom_linear_scale = LaunchConfiguration('odom_linear_scale', default='1.0')
     odom_angular_scale = LaunchConfiguration('odom_angular_scale', default='0.735')
-    max_linear = LaunchConfiguration('max_linear', default='0.25')
-    max_angular = LaunchConfiguration('max_angular', default='1.7')
+    max_linear = LaunchConfiguration('max_linear', default='0.16')
+    max_angular = LaunchConfiguration('max_angular', default='0.60')
     max_pwm = LaunchConfiguration('max_pwm', default='255')
-    min_nonzero_pwm = LaunchConfiguration('min_nonzero_pwm', default='130')
-    min_turn_pwm = LaunchConfiguration('min_turn_pwm', default='150')
+    min_nonzero_pwm = LaunchConfiguration('min_nonzero_pwm', default='115')
+    min_turn_pwm = LaunchConfiguration('min_turn_pwm', default='115')
     reverse_pwm_scale = LaunchConfiguration('reverse_pwm_scale', default='1.0')
     left_forward_pwm_scale = LaunchConfiguration('left_forward_pwm_scale', default='1.0')
     left_reverse_pwm_scale = LaunchConfiguration('left_reverse_pwm_scale', default='1.0')
     right_forward_pwm_scale = LaunchConfiguration('right_forward_pwm_scale', default='1.0')
     right_reverse_pwm_scale = LaunchConfiguration('right_reverse_pwm_scale', default='1.0')
-    turn_pwm_scale = LaunchConfiguration('turn_pwm_scale', default='1.0')
+    turn_pwm_scale = LaunchConfiguration('turn_pwm_scale', default='0.65')
     turn_in_place_threshold = LaunchConfiguration('turn_in_place_threshold', default='0.05')
     turn_assist_cmd_w_threshold = LaunchConfiguration('turn_assist_cmd_w_threshold', default='0.0')
     turn_assist_min_pwm_delta = LaunchConfiguration('turn_assist_min_pwm_delta', default='0')
@@ -147,17 +147,17 @@ def generate_launch_description():
         DeclareLaunchArgument('encoder_cpr', default_value='330'),
         DeclareLaunchArgument('odom_linear_scale', default_value='1.0'),
         DeclareLaunchArgument('odom_angular_scale', default_value='0.735'),
-        DeclareLaunchArgument('max_linear', default_value='0.25'),
-        DeclareLaunchArgument('max_angular', default_value='1.7'),
+        DeclareLaunchArgument('max_linear', default_value='0.16'),
+        DeclareLaunchArgument('max_angular', default_value='0.60'),
         DeclareLaunchArgument('max_pwm', default_value='255'),
-        DeclareLaunchArgument('min_nonzero_pwm', default_value='130'),
-        DeclareLaunchArgument('min_turn_pwm', default_value='150'),
+        DeclareLaunchArgument('min_nonzero_pwm', default_value='115'),
+        DeclareLaunchArgument('min_turn_pwm', default_value='115'),
         DeclareLaunchArgument('reverse_pwm_scale', default_value='1.0'),
         DeclareLaunchArgument('left_forward_pwm_scale', default_value='1.0'),
         DeclareLaunchArgument('left_reverse_pwm_scale', default_value='1.0'),
         DeclareLaunchArgument('right_forward_pwm_scale', default_value='1.0'),
         DeclareLaunchArgument('right_reverse_pwm_scale', default_value='1.0'),
-        DeclareLaunchArgument('turn_pwm_scale', default_value='1.0'),
+        DeclareLaunchArgument('turn_pwm_scale', default_value='0.65'),
         DeclareLaunchArgument('turn_in_place_threshold', default_value='0.05'),
         DeclareLaunchArgument('turn_assist_cmd_w_threshold', default_value='0.0'),
         DeclareLaunchArgument('turn_assist_min_pwm_delta', default_value='0'),

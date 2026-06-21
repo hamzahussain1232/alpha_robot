@@ -9,16 +9,13 @@ def generate_launch_description():
     # Keep args compatible with parent launch files.
     namespace = LaunchConfiguration('namespace', default='')
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
+    slam_params_file = LaunchConfiguration('slam_params_file')
 
-    slam_params_file = PathJoinSubstitution(
-        [FindPackageShare('articubot_one'), 'config', 'mapper_params_online_async.yaml']
-    )
-
-    # Use slam_toolbox's official lifecycle event launch flow.
-    # This avoids Nav2 lifecycle-manager bond heartbeat resets in simulation.
+    # Use slam_toolbox's official synchronous lifecycle flow for mapping.
+    # It processes scans in order, which is more stable for this small indoor sim.
     slam_toolbox_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            '/opt/ros/jazzy/share/slam_toolbox/launch/online_async_launch.py'
+            '/opt/ros/jazzy/share/slam_toolbox/launch/online_sync_launch.py'
         ),
         launch_arguments={
             'autostart': 'true',
@@ -31,6 +28,13 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('namespace', default_value=''),
         DeclareLaunchArgument('use_sim_time', default_value='false'),
+        DeclareLaunchArgument(
+            'slam_params_file',
+            default_value=PathJoinSubstitution(
+                [FindPackageShare('articubot_one'), 'config', 'mapper_params_online_async.yaml']
+            ),
+            description='Full path to the SLAM Toolbox parameter file',
+        ),
         LogInfo(msg=['============ STARTING SLAM TOOLBOX ============']),
         LogInfo(msg=['Params: ', slam_params_file]),
         LogInfo(msg=['Namespace: ', namespace]),

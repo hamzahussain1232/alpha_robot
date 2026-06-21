@@ -14,6 +14,7 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
     map_file = LaunchConfiguration('map', default='')
     localizer_type = LaunchConfiguration('localizer_type', default='slam_toolbox')
+    slam_params_file = LaunchConfiguration('slam_params_file')
 
     # PATHS TO INCLUDED FILES
     # Based on your screenshot, these are inside 'launch/localizers/'
@@ -24,7 +25,11 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([FindPackageShare(package_name), 'launch', 'localizers', 'slam_toolbox.launch.py'])
         ),
-        launch_arguments={'namespace': namespace, 'use_sim_time': use_sim_time}.items(),
+        launch_arguments={
+            'namespace': namespace,
+            'use_sim_time': use_sim_time,
+            'slam_params_file': slam_params_file,
+        }.items(),
         condition=IfCondition(EqualsSubstitution(localizer_type, 'slam_toolbox'))
     )
 
@@ -72,6 +77,13 @@ def generate_launch_description():
             'map',
             default_value='',
             description='Full path to map.yaml (required for amcl and map_server)'
+        ),
+        DeclareLaunchArgument(
+            'slam_params_file',
+            default_value=PathJoinSubstitution(
+                [FindPackageShare(package_name), 'config', 'mapper_params_online_async.yaml']
+            ),
+            description='Full path to the SLAM Toolbox parameter file'
         ),
 
         LogInfo(msg=['============ STARTING LOCALIZER ============']),

@@ -57,8 +57,8 @@ class WasdTeleop(Node):
         super().__init__('wasd_teleop')
         self.declare_parameter('cmd_topic', '/cmd_vel')
         self.declare_parameter('use_stamped', False)
-        self.declare_parameter('linear_speed', 0.4)
-        self.declare_parameter('angular_speed', 4.5)
+        self.declare_parameter('linear_speed', 0.12)
+        self.declare_parameter('angular_speed', 0.55)
         self.declare_parameter('publish_rate_hz', 20.0)
         self.declare_parameter('stop_timeout', 0.3)
 

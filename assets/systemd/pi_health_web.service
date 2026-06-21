@@ -6,8 +6,8 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=hh89669411
-WorkingDirectory=/home/hh89669411/ros2_ws
-ExecStart=/home/hh89669411/ros2_ws/install/articubot_one/lib/articubot_one/start_pi_health_web.sh
+WorkingDirectory=%h/ros2_ws
+ExecStart=%h/ros2_ws/src/articubot_one/scripts/start_pi_health_web.sh
 Restart=always
 RestartSec=5
 

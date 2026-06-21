@@ -1,8 +1,8 @@
 ### ekf_filter_node_odom (SIM + IMU yaw fusion) ###
 ekf_filter_node_odom:
   ros__parameters:
-    frequency: 50.0
-    sensor_timeout: 0.1
+    frequency: 20.0
+    sensor_timeout: 0.25
     two_d_mode: true
     transform_time_offset: 0.0
     transform_timeout: 0.0
@@ -16,7 +16,9 @@ ekf_filter_node_odom:
     base_link_frame: base_link
     world_frame: odom
 
-    # Wheel odometry pose+twist + IMU yaw/yaw-rate for stable in-place turning.
+    # Use wheel odometry for pose and yaw, and IMU only for yaw-rate stabilization.
+    # In this simulation the IMU absolute orientation can disagree with wheel odom,
+    # which causes map smear during turns if we fuse both yaw pose sources.
     odom0: /diff_cont/odom
     odom0_config: [true,  true,  false,
                    false, false, false,

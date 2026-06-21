@@ -8,6 +8,9 @@ import re
 import time
 import threading
 
+LINEAR_SPEED = 0.12
+ANGULAR_SPEED = 0.35
+
 class OmniRobotCommander(Node):
     def __init__(self):
         super().__init__('omni_robot_commander')
@@ -31,16 +34,16 @@ class OmniRobotCommander(Node):
             return
 
         if any(word in cmd for word in ["forward", "ahead", "straight"]):
-            self._send_twist(0.3, 0.0)
+            self._send_twist(LINEAR_SPEED, 0.0)
             self.get_logger().info("Action: Drive Forward")
         elif "back" in cmd:
-            self._send_twist(-0.3, 0.0)
+            self._send_twist(-LINEAR_SPEED, 0.0)
             self.get_logger().info("Action: Drive Backward")
         elif "left" in cmd:
-            self._send_twist(0.0, 0.8)
+            self._send_twist(0.0, ANGULAR_SPEED)
             self.get_logger().info("Action: Turn Left")
         elif "right" in cmd:
-            self._send_twist(0.0, -0.8)
+            self._send_twist(0.0, -ANGULAR_SPEED)
             self.get_logger().info("Action: Turn Right")
             
         if "give me my cup" in cmd or "give me cup" in cmd or "grab cup" in cmd or "pick cup" in cmd:
@@ -69,7 +72,7 @@ class OmniRobotCommander(Node):
         time.sleep(2)
         self._send_arm([0.0, 1.0, 0.0, 0.0, 0.0, 1.0])
         time.sleep(2)
-        self._send_twist(0.0, 1.0)
+        self._send_twist(0.0, ANGULAR_SPEED)
         time.sleep(0.5)
         self._send_twist(0.0, 0.0)
         self._send_arm([1.0, 1.0, -0.5, 0.0, 0.0, 1.0])

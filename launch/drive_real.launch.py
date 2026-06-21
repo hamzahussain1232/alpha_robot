@@ -16,6 +16,11 @@ def generate_launch_description():
     wheel_separation = LaunchConfiguration('wheel_separation', default='0.236')
     wheel_radius = LaunchConfiguration('wheel_radius', default='0.0325')
     encoder_cpr = LaunchConfiguration('encoder_cpr', default='330')
+    max_linear = LaunchConfiguration('max_linear', default='0.16')
+    max_angular = LaunchConfiguration('max_angular', default='0.60')
+    min_nonzero_pwm = LaunchConfiguration('min_nonzero_pwm', default='115')
+    min_turn_pwm = LaunchConfiguration('min_turn_pwm', default='115')
+    turn_pwm_scale = LaunchConfiguration('turn_pwm_scale', default='0.65')
     include_arm = LaunchConfiguration('include_arm', default='true')
     lidar_offset_x = LaunchConfiguration('lidar_offset_x', default='-0.0885')
     lidar_offset_y = LaunchConfiguration('lidar_offset_y', default='0.0')
@@ -49,6 +54,11 @@ def generate_launch_description():
             'wheel_separation': wheel_separation,
             'wheel_radius': wheel_radius,
             'encoder_cpr': encoder_cpr,
+            'max_linear': max_linear,
+            'max_angular': max_angular,
+            'min_nonzero_pwm': min_nonzero_pwm,
+            'min_turn_pwm': min_turn_pwm,
+            'turn_pwm_scale': turn_pwm_scale,
         }.items(),
     )
 
@@ -60,8 +70,8 @@ def generate_launch_description():
         parameters=[{
             'cmd_topic': '/cmd_vel',
             'use_stamped': False,
-            'linear_speed': 0.15,
-            'angular_speed': 1.7,
+            'linear_speed': 0.10,
+            'angular_speed': 0.55,
             'publish_rate_hz': 20.0,
             'stop_timeout': 0.3,
         }],
@@ -75,6 +85,11 @@ def generate_launch_description():
         DeclareLaunchArgument('wheel_separation', default_value='0.236'),
         DeclareLaunchArgument('wheel_radius', default_value='0.0325'),
         DeclareLaunchArgument('encoder_cpr', default_value='330'),
+        DeclareLaunchArgument('max_linear', default_value='0.16'),
+        DeclareLaunchArgument('max_angular', default_value='0.60'),
+        DeclareLaunchArgument('min_nonzero_pwm', default_value='115'),
+        DeclareLaunchArgument('min_turn_pwm', default_value='115'),
+        DeclareLaunchArgument('turn_pwm_scale', default_value='0.65'),
         DeclareLaunchArgument('include_arm', default_value='true'),
         DeclareLaunchArgument('lidar_offset_x', default_value='-0.0885'),
         DeclareLaunchArgument('lidar_offset_y', default_value='0.0'),

@@ -11,6 +11,25 @@ from rclpy.node import Node
 from std_msgs.msg import String
 
 
+def default_phone_html_path() -> str:
+    try:
+        from ament_index_python.packages import get_package_share_directory
+
+        return str(
+            Path(get_package_share_directory("articubot_one"))
+            / "assets"
+            / "voice"
+            / "phone_voice.html"
+        )
+    except Exception:
+        return str(
+            Path(__file__).resolve().parent.parent
+            / "assets"
+            / "voice"
+            / "phone_voice.html"
+        )
+
+
 class VoiceTextPublisher(Node):
     def __init__(self):
         super().__init__("voice_text_publisher")
@@ -91,8 +110,7 @@ def main():
     parser.add_argument("--serve", action="store_true", help="Run HTTP server for phone text input")
     parser.add_argument("--host", default="0.0.0.0", help="Bind host for HTTP server")
     parser.add_argument("--port", type=int, default=5000, help="Bind port for HTTP server")
-    default_html = Path(__file__).resolve().parent.parent / "assets" / "voice" / "phone_voice.html"
-    parser.add_argument("--html", default=str(default_html), help="Path to phone HTML page")
+    parser.add_argument("--html", default=default_phone_html_path(), help="Path to phone HTML page")
     args = parser.parse_args()
 
     rclpy.init()

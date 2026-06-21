@@ -60,6 +60,13 @@ def generate_launch_description():
         'voice_params',
         default=PathJoinSubstitution([FindPackageShare(package_name), 'config', 'voice_params.yaml']),
     )
+    mapping_slam_params_default = PathJoinSubstitution(
+        [FindPackageShare(package_name), 'config', 'mapper_params_sim_stable.yaml']
+    )
+    mapping_slam_params = LaunchConfiguration(
+        'mapping_slam_params',
+        default=mapping_slam_params_default,
+    )
     enable_perception = LaunchConfiguration('enable_perception', default='false')
     enable_detector = LaunchConfiguration('enable_detector', default='false')
     enable_marker_detector = LaunchConfiguration('enable_marker_detector', default='false')
@@ -72,7 +79,7 @@ def generate_launch_description():
         'camera_params',
         default=PathJoinSubstitution([FindPackageShare(package_name), 'config', 'camera_libcamera_params.yaml']),
     )
-    enable_task_manager = LaunchConfiguration('enable_task_manager', default='true')
+    enable_task_manager = LaunchConfiguration('enable_task_manager', default='false')
     spawn_arm_controller = LaunchConfiguration('spawn_arm_controller', default='false')
     include_arm = LaunchConfiguration('include_arm', default='true')
     serial_port = LaunchConfiguration('serial_port', default='/dev/serial/by-id/usb-1a86_USB_Serial-if00-port0')
@@ -86,15 +93,15 @@ def generate_launch_description():
     wheel_separation = LaunchConfiguration('wheel_separation', default='0.236')
     wheel_radius = LaunchConfiguration('wheel_radius', default='0.0325')
     encoder_cpr = LaunchConfiguration('encoder_cpr', default='330')
-    nav_max_angular = LaunchConfiguration('nav_max_angular', default='1.2')
-    nav_min_turn_pwm = LaunchConfiguration('nav_min_turn_pwm', default='180')
-    nav_turn_pwm_scale = LaunchConfiguration('nav_turn_pwm_scale', default='1.35')
+    nav_max_angular = LaunchConfiguration('nav_max_angular', default='0.60')
+    nav_min_turn_pwm = LaunchConfiguration('nav_min_turn_pwm', default='115')
+    nav_turn_pwm_scale = LaunchConfiguration('nav_turn_pwm_scale', default='0.65')
     nav_turn_in_place_threshold = LaunchConfiguration('nav_turn_in_place_threshold', default='0.08')
     nav_turn_assist_cmd_w_threshold = LaunchConfiguration(
-        'nav_turn_assist_cmd_w_threshold', default='0.05'
+        'nav_turn_assist_cmd_w_threshold', default='0.10'
     )
     nav_turn_assist_min_pwm_delta = LaunchConfiguration(
-        'nav_turn_assist_min_pwm_delta', default='80'
+        'nav_turn_assist_min_pwm_delta', default='0'
     )
     lidar_port = LaunchConfiguration('lidar_port', default='/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0')
     lidar_baud = LaunchConfiguration('lidar_baud', default='115200')
@@ -204,6 +211,7 @@ def generate_launch_description():
             'lidar_offset_x': lidar_offset_x,
             'lidar_offset_y': lidar_offset_y,
             'lidar_offset_z': lidar_offset_z,
+            'lidar_yaw': lidar_yaw,
             'cleanup_on_start': cleanup_on_start,
             'ros_localhost_only': ros_localhost_only,
             'ros_domain_id': ros_domain_id,
@@ -244,7 +252,7 @@ def generate_launch_description():
                     nav_max_angular,
                     "' if '",
                     mode,
-                    "' == 'navigation' else '1.7'",
+                    "' == 'navigation' else '0.60'",
                 ]
             ),
             'min_turn_pwm': PythonExpression(
@@ -253,7 +261,7 @@ def generate_launch_description():
                     nav_min_turn_pwm,
                     "' if '",
                     mode,
-                    "' == 'navigation' else '150'",
+                    "' == 'navigation' else '115'",
                 ]
             ),
             'turn_pwm_scale': PythonExpression(
@@ -262,7 +270,7 @@ def generate_launch_description():
                     nav_turn_pwm_scale,
                     "' if '",
                     mode,
-                    "' == 'navigation' else '1.0'",
+                    "' == 'navigation' else '0.65'",
                 ]
             ),
             'turn_in_place_threshold': PythonExpression(
@@ -328,8 +336,8 @@ def generate_launch_description():
         parameters=[{
             'cmd_topic': '/cmd_vel',
             'use_stamped': False,
-            'linear_speed': 0.15,
-            'angular_speed': 1.7,
+            'linear_speed': 0.10,
+            'angular_speed': 0.55,
             'publish_rate_hz': 20.0,
             'stop_timeout': 0.3,
         }],
@@ -403,9 +411,34 @@ def generate_launch_description():
             'namespace': namespace,
             'use_sim_time': use_sim_time,
             'localizer_type': mapping_localizer_type,
+            'slam_params_file': mapping_slam_params,
             'map': '',
         }.items(),
         condition=IfCondition(EqualsSubstitution(mode, 'mapping')),
+    )
+
+    stable_scan_cloud = Node(
+        package=package_name,
+        executable='stable_scan_cloud.py',
+        name='stable_scan_cloud',
+        output='screen',
+        parameters=[
+            {
+                'use_sim_time': use_sim_time,
+                'scan_topic': '/scan',
+                'cloud_topic': '/stable_scan_cloud',
+                'target_frame': 'map',
+                'max_age_sec': 0.0,
+                'stride': 1,
+                'max_range': 5.95,
+                'ignore_range_margin': 0.05,
+            }
+        ],
+        condition=IfCondition(
+            PythonExpression(
+                ["'", hardware_mode, "' == 'sim' and '", mode, "' == 'mapping'"]
+            )
+        ),
     )
 
     amcl_localizer = IncludeLaunchDescription(
@@ -589,12 +622,12 @@ def generate_launch_description():
             DeclareLaunchArgument('wheel_separation', default_value='0.236'),
             DeclareLaunchArgument('wheel_radius', default_value='0.0325'),
             DeclareLaunchArgument('encoder_cpr', default_value='330'),
-            DeclareLaunchArgument('nav_max_angular', default_value='1.2'),
-            DeclareLaunchArgument('nav_min_turn_pwm', default_value='180'),
-            DeclareLaunchArgument('nav_turn_pwm_scale', default_value='1.35'),
+            DeclareLaunchArgument('nav_max_angular', default_value='0.60'),
+            DeclareLaunchArgument('nav_min_turn_pwm', default_value='115'),
+            DeclareLaunchArgument('nav_turn_pwm_scale', default_value='0.65'),
             DeclareLaunchArgument('nav_turn_in_place_threshold', default_value='0.08'),
-            DeclareLaunchArgument('nav_turn_assist_cmd_w_threshold', default_value='0.05'),
-            DeclareLaunchArgument('nav_turn_assist_min_pwm_delta', default_value='80'),
+            DeclareLaunchArgument('nav_turn_assist_cmd_w_threshold', default_value='0.10'),
+            DeclareLaunchArgument('nav_turn_assist_min_pwm_delta', default_value='0'),
             DeclareLaunchArgument('lidar_port', default_value='/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0'),
             DeclareLaunchArgument('lidar_baud', default_value='115200'),
             DeclareLaunchArgument('lidar_frame', default_value='laser_frame'),
@@ -607,6 +640,7 @@ def generate_launch_description():
             DeclareLaunchArgument('phone_text_host', default_value='0.0.0.0'),
             DeclareLaunchArgument('phone_text_port', default_value='5000'),
             DeclareLaunchArgument('voice_params', default_value=voice_params),
+            DeclareLaunchArgument('mapping_slam_params', default_value=mapping_slam_params_default),
             DeclareLaunchArgument('enable_perception', default_value='false'),
             DeclareLaunchArgument('enable_detector', default_value='false'),
             DeclareLaunchArgument('enable_marker_detector', default_value='false'),
@@ -626,7 +660,7 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument('arm_baud', default_value='9600'),
             DeclareLaunchArgument('arm_serial_boot_wait_sec', default_value='2.0'),
-            DeclareLaunchArgument('enable_task_manager', default_value='true'),
+            DeclareLaunchArgument('enable_task_manager', default_value='false'),
             DeclareLaunchArgument(
                 'spawn_arm_controller',
                 default_value='false',
@@ -666,6 +700,7 @@ def generate_launch_description():
             real_arm_driver,
             rviz,
             delayed_localizers,
+            stable_scan_cloud,
             delayed_navigation,
             voice_control,
             perception_sim,
@@ -674,21 +709,17 @@ def generate_launch_description():
             task_manager_real,
 
             # ---------- NEW AI INTEGRATIONS FOR WORKFLOW ----------
-            # Start the mobile dashboard website (voice + drive controls)
-            ExecuteProcess(
-                cmd=['/home/hh89669411/ros2_ws/.venv_voice/bin/python3',
-                     '/home/hh89669411/ros2_ws/src/articubot_one/scripts/omni_voice_server.py',
-                     '--host', phone_text_host,
-                     '--port', phone_text_port],
+            # Start Voice UI Website from the installed ROS executable so the path
+            # stays portable across laptop and Pi copies of the workspace.
+            Node(
+                package='articubot_one',
+                executable='omni_voice_server.py',
+                name='omni_voice_server',
                 output='screen',
-                condition=IfCondition(
-                    PythonExpression([
-                        "'", enable_phone_text, "' == 'true' or '", enable_voice, "' == 'true'"
-                    ])
-                ),
+                condition=IfCondition(enable_voice),
             ),
 
-            # Optional legacy direct-command voice brain
+            # Start Voice Command Brain
             Node(
                 package='articubot_one',
                 executable='omni_robot_commander.py',

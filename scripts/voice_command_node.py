@@ -17,8 +17,8 @@ class VoiceCommandNode(Node):
     def __init__(self):
         super().__init__("voice_command_node")
 
-        self.declare_parameter("linear_speed", 0.25)
-        self.declare_parameter("angular_speed", 0.8)
+        self.declare_parameter("linear_speed", 0.12)
+        self.declare_parameter("angular_speed", 0.35)
         self.declare_parameter("motion_duration_sec", 1.0)
         self.declare_parameter("arm_move_duration_sec", 2.0)
         self.declare_parameter("arm_home", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])

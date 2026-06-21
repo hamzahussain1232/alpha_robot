@@ -95,8 +95,8 @@ controller_server:
       angular_dist_threshold: 0.52
       angular_disengage_threshold: 0.17
       forward_sampling_distance: 0.25
-      rotate_to_heading_angular_vel: 1.0
-      max_angular_accel: 4.0
+      rotate_to_heading_angular_vel: 0.45
+      max_angular_accel: 1.2
       simulate_ahead_time: 1.0
       rotate_to_goal_heading: true
       closed_loop: true
@@ -107,16 +107,16 @@ controller_server:
         min_vel_y: 0.0
         max_vel_x: 0.10
         max_vel_y: 0.0
-        max_vel_theta: 1.2
+        max_vel_theta: 0.60
         min_speed_xy: 0.0
         max_speed_xy: 0.10
-        min_speed_theta: 0.45
+        min_speed_theta: 0.18
         acc_lim_x: 0.5
         acc_lim_y: 0.0
-        acc_lim_theta: 4.0
+        acc_lim_theta: 1.2
         decel_lim_x: -0.5
         decel_lim_y: 0.0
-        decel_lim_theta: -4.0
+        decel_lim_theta: -1.2
         vx_samples: 20
         vy_samples: 5
         vtheta_samples: 30
@@ -242,9 +242,9 @@ behavior_server:
     drive_on_heading:
       plugin: "nav2_behaviors::DriveOnHeading"
     transform_tolerance: 0.3
-    max_rotational_vel: 1.2
-    min_rotational_vel: 0.45
-    rotational_acc_lim: 4.0
+    max_rotational_vel: 0.60
+    min_rotational_vel: 0.18
+    rotational_acc_lim: 1.2
 
 robot_state_publisher:
   ros__parameters:
@@ -267,10 +267,10 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
-    max_velocity: [0.10, 0.0, 1.2]
-    min_velocity: [-0.10, 0.0, -1.2]
-    max_accel: [0.5, 0.0, 4.0]
-    max_decel: [-0.5, 0.0, -4.0]
+    max_velocity: [0.10, 0.0, 0.60]
+    min_velocity: [-0.10, 0.0, -0.60]
+    max_accel: [0.5, 0.0, 1.2]
+    max_decel: [-0.5, 0.0, -1.2]
     odom_topic: "/odom"
     deadband_velocity: [0.0, 0.0, 0.0]
     velocity_timeout: 1.0

@@ -29,6 +29,10 @@ def generate_launch_description():
     # Check if we're told to use sim time
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
     include_arm = LaunchConfiguration('include_arm', default='false')
+    controllers_file = LaunchConfiguration(
+        'controllers_file',
+        default=PathJoinSubstitution([FindPackageShare(package_name), 'config', 'my_controllers.yaml'])
+    )
     lidar_offset_x = LaunchConfiguration('lidar_offset_x', default='0.0')
     lidar_offset_y = LaunchConfiguration('lidar_offset_y', default='0.0')
     lidar_offset_z = LaunchConfiguration('lidar_offset_z', default='0.0275')
@@ -49,6 +53,8 @@ def generate_launch_description():
         use_sim_time,
         ' include_arm:=',
         include_arm,
+        ' controllers_file:=',
+        controllers_file,
         ' lidar_offset_x:=',
         lidar_offset_x,
         ' lidar_offset_y:=',
@@ -106,6 +112,11 @@ def generate_launch_description():
             'include_arm',
             default_value='false',
             description='Include arm links/joints in robot description'),
+        DeclareLaunchArgument(
+            'controllers_file',
+            default_value=PathJoinSubstitution([FindPackageShare(package_name), 'config', 'my_controllers.yaml']),
+            description='Controller config file injected into gz_ros2_control in robot description'
+        ),
         DeclareLaunchArgument(
             'lidar_offset_x',
             default_value='0.0',

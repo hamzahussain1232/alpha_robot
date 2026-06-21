@@ -52,15 +52,15 @@
         <sensor name='laser_sensor' type='gpu_lidar'>
           <pose>0 0 0 0 0 0</pose>
           <always_on>1</always_on>
-          <!-- Stable sim profile for mapping: improve temporal consistency while keeping load bounded. -->
-          <update_rate>10.0</update_rate>
+          <!-- Stable sim profile for mapping: more temporal samples during turns. -->
+          <update_rate>12.0</update_rate>
           <topic>/scan</topic>
           <gz_frame_id>laser_frame</gz_frame_id>
           <frame_id>laser_frame</frame_id>
           <visualize>false</visualize> <ray>
             <scan>
               <horizontal>
-                <!-- 360 samples/scan @ 8Hz ~= 2880 samples/sec (similar load, better temporal response). -->
+                <!-- 360 samples/scan @ 12Hz gives cleaner scan matching during turns. -->
                 <samples>360</samples>
                 <resolution>1</resolution>
                 <min_angle>$(arg lidar_min_angle)</min_angle>
@@ -68,7 +68,7 @@
               </horizontal>
             </scan>
             <range>
-              <min>0.15</min> <max>12.0</max>
+              <min>0.15</min> <max>6.0</max>
               <resolution>0.01</resolution>
             </range>
             <noise>

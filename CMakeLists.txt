@@ -26,6 +26,7 @@ install(PROGRAMS
   scripts/pi_health_monitor.py
   scripts/pi_health_web.py
   scripts/start_pi_health_web.sh
+  scripts/camera_detection_web.py
   scripts/arm_calibration.py
   scripts/arm_web_teleop.py
   scripts/nano_arm_keyboard.py
@@ -52,6 +53,7 @@ install(PROGRAMS
   scripts/omni_robot_commander.py
   scripts/red_object_picker.py
   scripts/finger_arm_controller.py
+  scripts/stable_scan_cloud.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

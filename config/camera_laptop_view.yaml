@@ -1,0 +1,13 @@
+/**:
+  ros__parameters:
+    camera: 0
+    role: viewfinder
+    format: YUYV
+    # Light profile for laptop browser / RViz viewing.
+    # Lower resolution and fps reduce Pi CPU, USB, and network load.
+    width: 640
+    height: 360
+    # 10 FPS
+    FrameDurationLimits: [100000, 100000]
+    frame_id: camera_link_optical
+    use_node_time: true

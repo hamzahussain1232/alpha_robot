@@ -11,8 +11,6 @@ For actual physical robots and other information look at [Project Wiki](https://
 
 The idea behind this package is to create a working, well-organized "_code sample_", which could be easily ammended with more robots.
 
-**Mobile dashboard:** `workflow.launch.py` can start a phone-friendly HTTPS page on port `5000` for voice commands and manual drive speed tuning. Open `https://<RaspberryPi-IP>:5000` from your mobile browser.
-
 To see how different robots co-exist within this package, look into the _robots_ folder.
 
 Adding a new robot should be as easy as copying an existing folder (e.g. _plucky_), renaming the copy and modifying files to fit your needs.

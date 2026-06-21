@@ -1,8 +1,8 @@
 voice_command_node:
   ros__parameters:
     use_sim_time: true
-    linear_speed: 0.25
-    angular_speed: 0.8
+    linear_speed: 0.12
+    angular_speed: 0.35
     motion_duration_sec: 1.0
     arm_move_duration_sec: 2.0
     command_match_threshold: 0.84
@@ -43,7 +43,7 @@ voice_mic_node:
     whisper_language: "en"
 
     # Optional Vosk fallback model path.
-    vosk_model_path: "/home/hamza-hussain/ros2_ws/models/vosk-model-small-en-us-0.15"
+    vosk_model_path: "models/vosk-model-small-en-us-0.15"
     vosk_sample_rate: 16000
     phrase_time_limit: 1.6
     listen_timeout: 0.8

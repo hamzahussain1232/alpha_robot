@@ -17,12 +17,12 @@ def generate_launch_description():
     wheel_separation = LaunchConfiguration('wheel_separation', default='0.236')
     wheel_radius = LaunchConfiguration('wheel_radius', default='0.0325')
     encoder_cpr = LaunchConfiguration('encoder_cpr', default='330')
-    max_angular = LaunchConfiguration('max_angular', default='1.2')
-    min_turn_pwm = LaunchConfiguration('min_turn_pwm', default='180')
-    turn_pwm_scale = LaunchConfiguration('turn_pwm_scale', default='1.35')
+    max_angular = LaunchConfiguration('max_angular', default='0.60')
+    min_turn_pwm = LaunchConfiguration('min_turn_pwm', default='115')
+    turn_pwm_scale = LaunchConfiguration('turn_pwm_scale', default='0.65')
     turn_in_place_threshold = LaunchConfiguration('turn_in_place_threshold', default='0.08')
-    turn_assist_cmd_w_threshold = LaunchConfiguration('turn_assist_cmd_w_threshold', default='0.05')
-    turn_assist_min_pwm_delta = LaunchConfiguration('turn_assist_min_pwm_delta', default='80')
+    turn_assist_cmd_w_threshold = LaunchConfiguration('turn_assist_cmd_w_threshold', default='0.10')
+    turn_assist_min_pwm_delta = LaunchConfiguration('turn_assist_min_pwm_delta', default='0')
     include_arm = LaunchConfiguration('include_arm', default='true')
 
     lidar_port = LaunchConfiguration('lidar_port', default='/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0')
@@ -128,8 +128,8 @@ def generate_launch_description():
         parameters=[{
             'cmd_topic': '/cmd_vel',
             'use_stamped': False,
-            'linear_speed': 0.15,
-            'angular_speed': 1.7,
+            'linear_speed': 0.10,
+            'angular_speed': 0.55,
             'publish_rate_hz': 20.0,
             'stop_timeout': 0.3,
         }],
@@ -143,12 +143,12 @@ def generate_launch_description():
         DeclareLaunchArgument('wheel_separation', default_value='0.236'),
         DeclareLaunchArgument('wheel_radius', default_value='0.0325'),
         DeclareLaunchArgument('encoder_cpr', default_value='330'),
-        DeclareLaunchArgument('max_angular', default_value='1.2'),
-        DeclareLaunchArgument('min_turn_pwm', default_value='180'),
-        DeclareLaunchArgument('turn_pwm_scale', default_value='1.35'),
+        DeclareLaunchArgument('max_angular', default_value='0.60'),
+        DeclareLaunchArgument('min_turn_pwm', default_value='115'),
+        DeclareLaunchArgument('turn_pwm_scale', default_value='0.65'),
         DeclareLaunchArgument('turn_in_place_threshold', default_value='0.08'),
-        DeclareLaunchArgument('turn_assist_cmd_w_threshold', default_value='0.05'),
-        DeclareLaunchArgument('turn_assist_min_pwm_delta', default_value='80'),
+        DeclareLaunchArgument('turn_assist_cmd_w_threshold', default_value='0.10'),
+        DeclareLaunchArgument('turn_assist_min_pwm_delta', default_value='0'),
         DeclareLaunchArgument('include_arm', default_value='true'),
         DeclareLaunchArgument('lidar_port', default_value='/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0'),
         DeclareLaunchArgument('lidar_baud', default_value='115200'),

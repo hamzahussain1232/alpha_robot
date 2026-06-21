@@ -12,7 +12,7 @@ object_detector_node:
 
     # Clean bootstrap profile: camera-only object detection on the Pi.
     backend: "onnxruntime"
-    model_path: "/home/hh89669411/ros2_ws/models/yolo11n.onnx"
+    model_path: "models/yolo11n.onnx"
     device: "cpu"
     onnx_input_width: 320
     onnx_input_height: 320

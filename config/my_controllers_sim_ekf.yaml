@@ -7,12 +7,8 @@ controller_manager:
       type: diff_drive_controller/DiffDriveController
     camera_tilt_controller:
       type: forward_command_controller/ForwardCommandController
-
-
     joint_broad:
       type: joint_state_broadcaster/JointStateBroadcaster
-
-    # NEW: Arm Controller Definition
     arm_controller:
       type: joint_trajectory_controller/JointTrajectoryController
 
@@ -20,29 +16,18 @@ diff_cont:
   ros__parameters:
     publish_rate: 50.0
     cmd_vel_timeout: 1.0
-    enable_odom_tf: true
-
+    enable_odom_tf: false
     base_frame_id: base_link
-
-    # 4-wheel skid-steer drive mapping.
     left_wheel_names: ['front_left_wheel_joint', 'rear_left_wheel_joint']
     right_wheel_names: ['front_right_wheel_joint', 'rear_right_wheel_joint']
     wheels_per_side: 2
-
-    # Distance between left and right wheels (center to center)
     wheel_separation: 0.236
-    # Effective skid-steer calibration multiplier
     wheel_separation_multiplier: 1.0
-    
-    # Wheel Radius (0.0325m)
     wheel_radius: 0.0325
     left_wheel_radius_multiplier: 1.0
     right_wheel_radius_multiplier: 1.0
-
-    # Keyboard input is bridged to TwistStamped on /key_vel, so keep this true.
     use_stamped_vel: true
 
-    # Safety Limits (Adjusted for Minibot)
     linear:
       x:
         has_velocity_limits: true
@@ -61,13 +46,13 @@ diff_cont:
         min_velocity: -0.45
         max_acceleration: 0.8
         max_deceleration: -0.8
+
 camera_tilt_controller:
   ros__parameters:
     joints:
       - camera_joint
     interface_name: position
 
-# NEW: Arm Controller Configuration
 arm_controller:
   ros__parameters:
     joints:
@@ -77,17 +62,13 @@ arm_controller:
       - joint_4
       - joint_5
       - joint_6
-    
     command_interfaces:
       - position
-    
     state_interfaces:
       - position
       - velocity
-    
     state_publish_rate: 50.0
     action_monitor_rate: 20.0
-
     allow_partial_joints_goal: false
     open_loop_control: true
     allow_integration_in_goal_trajectories: true
