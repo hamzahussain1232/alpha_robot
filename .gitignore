@@ -1,4 +1,42 @@
+# ROS 2 generated folders
+build/
+install/
+log/
+**/build/
+**/install/
+**/log/
 
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python environments
+.venv/
+venv/
+env/
+
+# Editors
+.vscode/
+.idea/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# ROS bags and temporary recordings
+*.bag
+*.db3
+*.mcap
+
+# Secrets and local environment files
+.env
+*.key
+*.pem
+
+# Temporary camera captures
+captures/
+recordings/
 .vscode
 /build
 *.pyc
