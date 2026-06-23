@@ -551,6 +551,7 @@ class ObjectDetectorNode(Node):
 
     def _build_objects(self, detections: List[Dict], frame_w: int, frame_h: int) -> List[Dict]:
         objects: List[Dict] = []
+
         for det in detections:
             if len(objects) >= self.max_objects:
                 break
@@ -558,17 +559,26 @@ class ObjectDetectorNode(Node):
             resolved = self._resolve_target_label(str(det["label_raw"]))
             if resolved is None:
                 continue
+
             label, aliases = resolved
             cx = 0.5 * (det["x1"] + det["x2"])
+
+            # For camera-only detection, publish the detected object even when
+            # no map/AMCL pose estimate is requested or available.
             pose = self._estimate_object_pose(cx, frame_w, label)
+
             if pose is None:
-                continue
+                pose = {}
+                frame_id = "camera_link_optical"
+            else:
+                frame_id = "map"
+
             objects.append(
                 {
                     "label": label,
                     "aliases": aliases,
                     "score": float(det["score"]),
-                    "frame_id": "map",
+                    "frame_id": frame_id,
                     "pose": pose,
                     "bbox": {
                         "x1": float(det["x1"]),
@@ -580,6 +590,7 @@ class ObjectDetectorNode(Node):
                     },
                 }
             )
+
         return objects
 
     def _publish_annotated_image(self, frame, detections: List[Dict], src_msg: Image) -> None:
