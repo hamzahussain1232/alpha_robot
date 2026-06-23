@@ -57,7 +57,7 @@ class SerialDiffDrive(Node):
         self.declare_parameter('timeout_sec', 0.5)
         self.declare_parameter('serial_boot_wait_sec', 2.0)
         self.declare_parameter('reconnect_on_empty_read_error', False)
-        self.declare_parameter('debug', False)
+        self.declare_parameter('debug', True)
 
         self.port = self.get_parameter('port').value
         self.baud = int(self.get_parameter('baud').value)

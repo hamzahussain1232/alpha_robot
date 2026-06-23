@@ -252,7 +252,7 @@ def generate_launch_description():
                     nav_max_angular,
                     "' if '",
                     mode,
-                    "' == 'navigation' else '0.60'",
+                    "' == 'navigation' else '1.70'",
                 ]
             ),
             'min_turn_pwm': PythonExpression(
@@ -270,7 +270,7 @@ def generate_launch_description():
                     nav_turn_pwm_scale,
                     "' if '",
                     mode,
-                    "' == 'navigation' else '0.65'",
+                    "' == 'navigation' else '1.0'",
                 ]
             ),
             'turn_in_place_threshold': PythonExpression(
@@ -337,7 +337,7 @@ def generate_launch_description():
             'cmd_topic': '/cmd_vel',
             'use_stamped': False,
             'linear_speed': 0.10,
-            'angular_speed': 0.55,
+            'angular_speed': 1.70,
             'publish_rate_hz': 20.0,
             'stop_timeout': 0.3,
         }],
