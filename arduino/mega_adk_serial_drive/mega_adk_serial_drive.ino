@@ -34,8 +34,8 @@ const int encRL_A = 18;
 const int encRR_A = 19;
 
 // B channels can be any digital pins
-const int encFL_B = 30;
-const int encFR_B = 31;
+const int encFL_B = 41;
+const int encFR_B = 43;
 const int encRL_B = 32;
 const int encRR_B = 33;
 

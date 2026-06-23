@@ -40,3 +40,33 @@ recordings/
 .vscode
 /build
 *.pyc
+
+# --- Local ROS generated files ---
+build/
+install/
+log/
+__pycache__/
+*.pyc
+
+# --- Recording / mapping artifacts ---
+*.bag
+*.bag.active
+*.db3
+*.mcap
+*.pcap
+*.pgm
+*.mp4
+*.avi
+*.mov
+*.zip
+*.tar.gz
+
+# --- Private keys / credentials ---
+.env
+.env.*
+*.pem
+*.key
+id_rsa
+id_ed25519
+credentials*
+secrets*

@@ -1,0 +1,13 @@
+[WARN] [1782247564.962998392] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1782247564.963060160] [rcl]: 'localhost_only' is disabled, 'automatic_discovery_range' and 'static_peers' will be used.
+WARNING: topic [/odom] does not appear to be published yet
+average rate: 19.712
+	min: 0.002s max: 0.056s std dev: 0.01100s window: 21
+average rate: 19.480
+	min: 0.002s max: 0.056s std dev: 0.00794s window: 41
+average rate: 19.295
+	min: 0.002s max: 0.056s std dev: 0.00662s window: 60
+average rate: 19.287
+	min: 0.002s max: 0.056s std dev: 0.00576s window: 80
+average rate: 19.222
+	min: 0.002s max: 0.056s std dev: 0.00520s window: 99

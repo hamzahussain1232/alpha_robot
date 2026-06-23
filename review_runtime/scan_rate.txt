@@ -1,0 +1,14 @@
+[WARN] [1782247556.734815315] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1782247556.735090154] [rcl]: 'localhost_only' is disabled, 'automatic_discovery_range' and 'static_peers' will be used.
+average rate: 8.665
+	min: 0.110s max: 0.123s std dev: 0.00596s window: 10
+average rate: 8.596
+	min: 0.110s max: 0.123s std dev: 0.00607s window: 19
+average rate: 8.605
+	min: 0.000s max: 0.344s std dev: 0.05336s window: 28
+average rate: 8.609
+	min: 0.000s max: 0.344s std dev: 0.04652s window: 37
+average rate: 8.612
+	min: 0.000s max: 0.344s std dev: 0.04181s window: 46
+average rate: 8.613
+	min: 0.000s max: 0.344s std dev: 0.03831s window: 55

@@ -1,0 +1,8 @@
+e0a6329 Update dashboard command routing and detector objects
+8bae8b5 Update real drive dashboard odometry and mapping configuration
+1825e90 Document Pi 5 IMX219 camera and YOLO setup
+e34801c Add Pi 5 camera detection mapping navigation and voice updates
+7791b8e Initial upload of alpha_robot
+bf5bec1 update serial_drive + arduino
+9dd7e06 Dev -> JP magnetometer and IMU related changes (#10)
+6283db0 Dev -> Main merge: face aware BT for Seggy, EKF filters moved to first cycle in launch files (#8)

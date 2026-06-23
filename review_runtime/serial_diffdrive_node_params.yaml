@@ -1,0 +1,47 @@
+[WARN] [1782247550.445784668] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1782247550.445858005] [rcl]: 'localhost_only' is disabled, 'automatic_discovery_range' and 'static_peers' will be used.
+/serial_diffdrive_node:
+  ros__parameters:
+    base_frame_id: base_link
+    baud: 115200
+    cmd_vel_topic: /diff_cont/cmd_vel
+    debug: true
+    enable_fallback_cmd_vel: true
+    encoder_cpr: 330
+    encoder_sign_fl: 1
+    encoder_sign_fr: 1
+    encoder_sign_rl: 1
+    encoder_sign_rr: 1
+    fallback_cmd_vel_topic: /cmd_vel
+    fallback_timeout_sec: 0.2
+    left_forward_pwm_scale: 1.0
+    left_reverse_pwm_scale: 1.0
+    max_angular: 1.7
+    max_linear: 0.16
+    max_pwm: 255
+    min_nonzero_pwm: 115
+    min_turn_pwm: 115
+    odom_angular_scale: 0.735
+    odom_frame_id: odom
+    odom_linear_scale: 1.0
+    port: /dev/serial/by-id/usb-1a86_USB_Serial-if00-port0
+    publish_tf: true
+    reconnect_on_empty_read_error: false
+    reverse_pwm_scale: 1.0
+    right_forward_pwm_scale: 1.0
+    right_reverse_pwm_scale: 1.0
+    serial_boot_wait_sec: 2.0
+    start_type_description_service: true
+    straight_trim_max_cmd_w: 0.15
+    straight_trim_min_cmd_vel: 0.05
+    straight_trim_pwm: 8
+    timeout_sec: 0.5
+    turn_assist_cmd_w_threshold: 0.0
+    turn_assist_min_pwm_delta: 0
+    turn_in_place_threshold: 0.05
+    turn_pwm_scale: 1.0
+    use_sim_time: false
+    use_stamped: true
+    wheel_radius: 0.0325
+    wheel_separation: 0.236
+
