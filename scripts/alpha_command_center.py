@@ -17,6 +17,7 @@ Electrical Engineers
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import signal
@@ -32,7 +33,15 @@ from flask import Flask, jsonify, render_template_string, request
 import rclpy
 from geometry_msgs.msg import TwistStamped
 from rclpy.node import Node
+from rclpy.time import Time
+from tf2_ros import Buffer, TransformException, TransformListener
 from std_msgs.msg import Bool, String
+
+from map_location_store import (
+    clean_location_name,
+    load_locations as read_map_locations,
+    save_location as write_map_location,
+)
 
 
 WORKSPACE = Path.home() / "ros2_ws"
@@ -444,7 +453,6 @@ button:disabled {
           <input
             id="locationName"
             maxlength="48"
-            disabled
             placeholder="Example: kitchen, bedroom, dining room">
         </div>
 
@@ -452,7 +460,7 @@ button:disabled {
           <button
             id="saveCurrentLocationButton"
             class="primary"
-            disabled>
+            onclick="saveCurrentLocation()">
             Save Current Robot Position
           </button>
 
@@ -469,14 +477,14 @@ button:disabled {
         </p>
 
         <div class="quick">
-          <button id="saveHomeButton" disabled>Save Home</button>
-          <button id="saveKitchenButton" disabled>Save Kitchen</button>
-          <button id="saveDrawingRoomButton" disabled>Save Drawing Room</button>
-          <button id="saveBedroomButton" disabled>Save Bedroom</button>
+          <button id="saveHomeButton" onclick="quickSaveLocation('home')">Save Home</button>
+          <button id="saveKitchenButton" onclick="quickSaveLocation('kitchen')">Save Kitchen</button>
+          <button id="saveDrawingRoomButton" onclick="quickSaveLocation('drawing room')">Save Drawing Room</button>
+          <button id="saveBedroomButton" onclick="quickSaveLocation('bedroom')">Save Bedroom</button>
         </div>
 
         <div id="savedLocations" class="statusbar">
-          No locations loaded yet. Part 3 will connect this selected-map list.
+          Loading saved locations for selected map…
         </div>
 
         <div class="notice">
@@ -486,8 +494,8 @@ button:disabled {
         </div>
 
         <p class="help" style="margin-top:12px">
-          Dashboard interface added successfully. Part 3 activates saving and
-          reading Home, Kitchen, Drawing Room, Bedroom, and custom locations.
+          Map-specific locations are active. Part 4 will add automatic
+          Start From Home localization and dynamic voice destinations.
         </p>
       </article>
 
@@ -640,6 +648,9 @@ async function loadMaps() {
       select.value = chosen;
     }
 
+    select.onchange = loadLocations;
+    await loadLocations();
+
   } catch (error) {
     showStatus(error.message, 'bad');
   }
@@ -722,6 +733,7 @@ async function saveMap() {
       document.getElementById('navigationMap').value = result.map_name;
     }
 
+    await loadLocations();
     showStatus(result.message + ' Selected for next navigation.', 'good');
   } catch (error) {
     showStatus(error.message, 'bad');
@@ -779,6 +791,89 @@ function speakCommand() {
   };
 
   recognition.start();
+}
+
+
+async function loadLocations() {
+  try {
+    const selectedMap = document.getElementById('navigationMap').value;
+
+    if (!selectedMap) {
+      return;
+    }
+
+    const response = await fetch(
+      '/api/locations?map_name=' + encodeURIComponent(selectedMap)
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || data.ok === false) {
+      throw new Error(data.message || 'Could not load saved locations.');
+    }
+
+    document.getElementById('locationMapStatus').textContent =
+      'Selected map: ' + data.map_name;
+
+    const output = document.getElementById('savedLocations');
+    const names = Object.keys(data.locations || {});
+
+    if (names.length === 0) {
+      output.textContent =
+        'No locations saved for this map yet. Start Navigation, localize robot in RViz once, then save Home.';
+      output.className = 'statusbar warn';
+      return;
+    }
+
+    const rows = names.sort().map((name) => {
+      const pose = data.locations[name];
+      const label = name.replaceAll('_', ' ');
+
+      return '✓ ' + label
+        + ' — x=' + pose.x.toFixed(2)
+        + ', y=' + pose.y.toFixed(2)
+        + ', yaw=' + pose.yaw_deg.toFixed(1) + '°';
+    });
+
+    output.textContent = rows.join(' | ');
+    output.className = 'statusbar good';
+
+  } catch (error) {
+    const output = document.getElementById('savedLocations');
+    output.textContent = error.message;
+    output.className = 'statusbar bad';
+  }
+}
+
+function quickSaveLocation(name) {
+  document.getElementById('locationName').value = name;
+  saveCurrentLocation();
+}
+
+async function saveCurrentLocation() {
+  try {
+    const selectedMap = document.getElementById('navigationMap').value;
+    const locationName = document.getElementById('locationName').value.trim();
+
+    if (!selectedMap) {
+      throw new Error('Select a navigation map first.');
+    }
+
+    if (!locationName) {
+      throw new Error('Enter a location name, such as kitchen or bedroom.');
+    }
+
+    const result = await api('/api/locations/save', {
+      map_name: selectedMap,
+      name: locationName
+    });
+
+    showStatus(result.message, 'good');
+    await loadLocations();
+
+  } catch (error) {
+    showStatus(error.message, 'bad');
+  }
 }
 
 async function setEstop(enabled) {
@@ -901,6 +996,9 @@ class CommandCenter(Node):
 
         self.selected_map_file = MAP_DIR / ".selected_navigation_map"
         self.selected_map = self.load_selected_map()
+
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
 
         self.estop = False
         self.task_status: Dict[str, Any] = {}
@@ -1143,6 +1241,87 @@ class CommandCenter(Node):
             os.killpg(proc.pid, signal.SIGKILL)
         except ProcessLookupError:
             return
+
+
+    def current_map_pose(self) -> Dict[str, float]:
+        try:
+            transform = self.tf_buffer.lookup_transform(
+                "map",
+                "base_link",
+                Time(),
+            )
+        except TransformException as exc:
+            raise RuntimeError(
+                "Robot map pose is unavailable. Start Navigation Mode, use RViz "
+                "2D Pose Estimate once, and wait for AMCL and LiDAR alignment. "
+                f"TF detail: {exc}"
+            )
+
+        translation = transform.transform.translation
+        rotation = transform.transform.rotation
+
+        sin_yaw = 2.0 * (
+            rotation.w * rotation.z
+            + rotation.x * rotation.y
+        )
+
+        cos_yaw = 1.0 - 2.0 * (
+            rotation.y * rotation.y
+            + rotation.z * rotation.z
+        )
+
+        yaw_deg = math.degrees(math.atan2(sin_yaw, cos_yaw))
+
+        return {
+            "x": round(float(translation.x), 4),
+            "y": round(float(translation.y), 4),
+            "yaw_deg": round(float(yaw_deg), 2),
+        }
+
+    def save_current_map_location(
+        self,
+        map_name: Any,
+        location_name: Any,
+    ) -> Tuple[str, Dict[str, float]]:
+        clean_map = self.safe_map_name(map_name)
+        clean_location = clean_location_name(location_name)
+
+        with self.lock:
+            navigation_running = (
+                self.mode == "navigation"
+                and self.mode_proc is not None
+                and self.mode_proc.poll() is None
+            )
+
+            active_map = self.selected_map
+
+        if not navigation_running:
+            raise RuntimeError(
+                "Start Navigation Mode before saving a robot location."
+            )
+
+        if clean_map != active_map:
+            raise RuntimeError(
+                f"Navigation is currently using '{active_map}'. "
+                "Do not switch map selection while saving locations."
+            )
+
+        pose = self.current_map_pose()
+
+        try:
+            write_map_location(
+                clean_map,
+                clean_location,
+                pose["x"],
+                pose["y"],
+                pose["yaw_deg"],
+            )
+        except Exception as exc:
+            raise RuntimeError(
+                f"Could not save location: {exc}"
+            ) from exc
+
+        return clean_location, pose
 
     def available_maps(self):
         maps = []
@@ -1724,6 +1903,76 @@ def api_maps():
         "maps": dashboard.available_maps(),
         "selected_map": dashboard.selected_map,
     })
+
+
+
+@app.route("/api/locations")
+def api_locations():
+    if dashboard is None:
+        return jsonify({
+            "ok": False,
+            "message": "Dashboard is starting.",
+        }), 503
+
+    try:
+        requested_map = request.args.get(
+            "map_name",
+            dashboard.selected_map,
+        )
+
+        map_name = dashboard.safe_map_name(
+            requested_map or dashboard.selected_map
+        )
+
+        if map_name not in dashboard.available_maps():
+            raise RuntimeError(
+                f"Saved map not found: {map_name}.yaml"
+            )
+
+        return jsonify({
+            "ok": True,
+            "map_name": map_name,
+            "locations": read_map_locations(map_name),
+        })
+
+    except Exception as exc:
+        return jsonify({
+            "ok": False,
+            "message": str(exc),
+        }), 400
+
+
+@app.route("/api/locations/save", methods=["POST"])
+def api_locations_save():
+    if dashboard is None:
+        return jsonify({
+            "ok": False,
+            "message": "Dashboard is starting.",
+        }), 503
+
+    try:
+        payload = request.get_json(silent=True) or {}
+
+        location_name, pose = dashboard.save_current_map_location(
+            payload.get("map_name", dashboard.selected_map),
+            payload.get("name", ""),
+        )
+
+        return jsonify({
+            "ok": True,
+            "message": (
+                f"Saved '{location_name.replace('_', ' ')}' for map "
+                f"'{dashboard.selected_map}'."
+            ),
+            "pose": pose,
+        })
+
+    except Exception as exc:
+        return jsonify({
+            "ok": False,
+            "message": str(exc),
+        }), 400
+
 
 
 def main() -> None:
