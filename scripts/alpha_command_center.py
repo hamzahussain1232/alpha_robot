@@ -118,7 +118,7 @@ h1{margin:0;font-size:clamp(22px,3vw,33px);letter-spacing:-.6px}
   grid-template-columns:repeat(2,minmax(0,1fr));
   gap:14px;
   margin-top:14px;
-  align-items:start;
+  align-items:stretch;
 }
 
 /* Compact square desktop layout enabled. */
@@ -133,6 +133,7 @@ h1{margin:0;font-size:clamp(22px,3vw,33px);letter-spacing:-.6px}
 
 .card{
   min-width:0;
+  height:100%;
   padding:16px;
   border:1px solid var(--line);
   border-radius:18px;
@@ -140,6 +141,54 @@ h1{margin:0;font-size:clamp(22px,3vw,33px);letter-spacing:-.6px}
   box-shadow:0 18px 42px rgba(0,0,0,.22);
 }
 .card h2{margin:0 0 7px;font-size:17px}
+
+/* Balanced 3 × 2 desktop control-center layout. */
+.drive-card,
+.map-card,
+.system-card{
+  display:flex;
+  flex-direction:column;
+}
+
+.drive-card .drive-layout{
+  flex:1;
+  align-content:center;
+}
+
+.map-card .two{
+  margin-top:auto;
+}
+
+.system-card .demo-mini{
+  margin-top:14px;
+}
+
+.demo-mini{
+  padding:11px 12px;
+  border:1px solid #294560;
+  border-radius:12px;
+  background:#091a2b;
+}
+
+.demo-mini-title{
+  margin-bottom:7px;
+  color:var(--text);
+  font-size:13px;
+  font-weight:800;
+}
+
+.demo-mini-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:6px 12px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.4;
+}
+
+.demo-mini-grid span:last-child{
+  grid-column:1 / -1;
+}
 .help{margin:0 0 15px;color:var(--muted);font-size:13px;line-height:1.45}
 .mode-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 button{
@@ -281,6 +330,9 @@ footer{padding:18px 4px 4px;text-align:center;color:#7793b3;font-size:12px}
 @media(max-width:1100px){
   .grid{grid-template-columns:1fr}
   .grid > .stack{display:grid;gap:14px}
+  .card{height:auto}
+  .demo-mini-grid{grid-template-columns:1fr}
+  .demo-mini-grid span:last-child{grid-column:auto}
   .header{align-items:flex-start;flex-direction:column}
   .owners{text-align:left}
 }
@@ -368,7 +420,7 @@ button:disabled {
         <div id="mainStatus" class="statusbar">Dashboard is starting.</div>
       </article>
 
-      <article class="card">
+      <article class="card drive-card">
         <h2>Manual Drive Control</h2>
         <p class="help">Press and hold a direction button. Releasing it sends a stop command. Manual drive is blocked during autonomous navigation.</p>
 
@@ -402,7 +454,7 @@ button:disabled {
         </div>
       </article>
 
-      <article class="card">
+      <article class="card map-card">
         <h2>Map Management</h2>
         <p class="help">Start Mapping, drive manually while viewing RViz on your laptop, then save your map before stopping Mapping Mode.</p>
 
@@ -512,12 +564,12 @@ button:disabled {
         </div>
 
         <p class="help" style="margin-top:12px">
-          Map-specific locations are active. Part 4 will add automatic
-          Start From Home localization and dynamic voice destinations.
+          Map-specific locations, Home initialization, and dynamic
+          voice destinations are active for the selected map.
         </p>
       </article>
 
-      <article class="card">
+      <article class="card system-card">
         <h2>System & Safety</h2>
 
         <div class="metrics">
@@ -548,16 +600,17 @@ button:disabled {
         </div>
 
         <div id="estopStatus" class="statusbar">Emergency stop status checking…</div>
-      </article>
 
-      <article class="card">
-        <h2>Demo Checklist</h2>
-        <div class="help" style="line-height:1.75">
-          1. Start Navigation.<br>
-          2. Set 2D Pose Estimate once in RViz.<br>
-          3. Wait for LiDAR scan alignment.<br>
-          4. Speak: <strong>“move to kitchen”</strong>.<br>
-          5. Use Emergency Stop immediately for unsafe movement.
+        <div class="demo-mini">
+          <div class="demo-mini-title">Demo Checklist</div>
+
+          <div class="demo-mini-grid">
+            <span>1. Start Navigation.</span>
+            <span>2. Set 2D Pose Estimate once in RViz.</span>
+            <span>3. Wait for LiDAR scan alignment.</span>
+            <span>4. Say: <strong>“move to kitchen”</strong>.</span>
+            <span>5. Use Emergency Stop immediately for unsafe movement.</span>
+          </div>
         </div>
       </article>
 
