@@ -94,7 +94,7 @@ def generate_launch_description():
     wheel_radius = LaunchConfiguration('wheel_radius', default='0.0325')
     encoder_cpr = LaunchConfiguration('encoder_cpr', default='330')
     nav_max_angular = LaunchConfiguration('nav_max_angular', default='1.70')
-    nav_min_turn_pwm = LaunchConfiguration('nav_min_turn_pwm', default='210')
+    nav_min_turn_pwm = LaunchConfiguration('nav_min_turn_pwm', default='115')
     nav_turn_pwm_scale = LaunchConfiguration('nav_turn_pwm_scale', default='1.0')
     nav_turn_in_place_threshold = LaunchConfiguration('nav_turn_in_place_threshold', default='0.08')
     nav_turn_assist_cmd_w_threshold = LaunchConfiguration(
