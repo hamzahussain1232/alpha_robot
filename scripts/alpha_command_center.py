@@ -48,7 +48,8 @@ WORKSPACE = Path.home() / "ros2_ws"
 PACKAGE = WORKSPACE / "src" / "articubot_one"
 MAP_DIR = WORKSPACE / "maps"
 LOG_DIR = WORKSPACE / "logs" / "command_center"
-TASK_MANAGER = PACKAGE / "scripts" / "named_goal_task_manager.py"
+TASK_MANAGER = PACKAGE / "scripts" / "per_map_goal_task_manager.py"
+HOME_INITIALIZER = PACKAGE / "scripts" / "home_station_initializer.py"
 
 app = Flask(__name__)
 dashboard = None
@@ -331,10 +332,9 @@ button:disabled {
             <div class="actions" style="margin-top:10px">
               <button class="primary" onclick="startNavigation()">Start Navigation</button>
 
-              <button class="secondary"
+              <button class="safe"
                 id="startFromHomeButton"
-                disabled
-                title="This becomes active in Part 4.">
+                onclick="startNavigation(true)">
                 Start From Home
               </button>
 
@@ -429,6 +429,7 @@ button:disabled {
           <button onclick="quickCommand('move to kitchen')">Kitchen</button>
           <button onclick="quickCommand('move to drawing room')">Drawing Room</button>
           <button onclick="quickCommand('go home')">Go Home</button>
+          <button onclick="quickCommand('move to bedroom')">Bedroom</button>
           <button onclick="quickCommand('cancel navigation')">Cancel Navigation</button>
         </div>
 
@@ -466,8 +467,8 @@ button:disabled {
 
           <button
             id="initializeHomeButton"
-            class="secondary"
-            disabled>
+            class="safe"
+            onclick="initializeFromHome()">
             Initialize from Home
           </button>
         </div>
@@ -589,7 +590,7 @@ async function startMode(mode) {
   }
 }
 
-async function startNavigation() {
+async function startNavigation(fromHome = false) {
   try {
     const selectedMap = document.getElementById('navigationMap').value;
 
@@ -597,14 +598,20 @@ async function startNavigation() {
       throw new Error('Select a saved map before starting Navigation Mode.');
     }
 
-    showStatus('Starting navigation using ' + selectedMap + '…', 'warn');
+    const message = fromHome
+      ? 'Starting Navigation from saved Home Station using ' + selectedMap + '…'
+      : 'Starting navigation using ' + selectedMap + '…';
+
+    showStatus(message, 'warn');
 
     const result = await api('/api/mode/start', {
       mode: 'navigation',
-      map_name: selectedMap
+      map_name: selectedMap,
+      initialize_home: fromHome
     });
 
     showStatus(result.message, 'good');
+
   } catch (error) {
     showStatus(error.message, 'bad');
   }
@@ -870,6 +877,26 @@ async function saveCurrentLocation() {
 
     showStatus(result.message, 'good');
     await loadLocations();
+
+  } catch (error) {
+    showStatus(error.message, 'bad');
+  }
+}
+
+
+async function initializeFromHome() {
+  try {
+    const selectedMap = document.getElementById('navigationMap').value;
+
+    if (!selectedMap) {
+      throw new Error('Select a saved map first.');
+    }
+
+    const result = await api('/api/localization/home', {
+      map_name: selectedMap
+    });
+
+    showStatus(result.message, 'good');
 
   } catch (error) {
     showStatus(error.message, 'bad');
@@ -1455,29 +1482,82 @@ class CommandCenter(Node):
             f">> {log_file} 2>&1"
         )
 
-    def start_task_manager(self, log_file: Path) -> None:
+    def start_task_manager(
+        self,
+        log_file: Path,
+        locations_file: Path,
+    ) -> None:
         if not TASK_MANAGER.is_file():
             raise RuntimeError(
-                f"Named goal task manager is missing: {TASK_MANAGER}"
+                f"Per-map goal manager is missing: {TASK_MANAGER}"
             )
 
         command = (
             "source /opt/ros/jazzy/setup.bash && "
             f"source {WORKSPACE}/install/setup.bash && "
-            f"exec python3 {TASK_MANAGER} >> {log_file} 2>&1"
+            f"exec python3 {TASK_MANAGER} "
+            f"--ros-args -p locations_file:={locations_file} "
+            f">> {log_file} 2>&1"
         )
 
         self.task_proc = self.run_shell(command)
+
+
+    def start_home_initializer(
+        self,
+        map_name: str,
+        delay_seconds: float,
+        log_file: Path,
+    ) -> None:
+        if not HOME_INITIALIZER.is_file():
+            raise RuntimeError(
+                f"Home initializer is missing: {HOME_INITIALIZER}"
+            )
+
+        locations_file = (
+            MAP_DIR / "locations" / f"{map_name}.yaml"
+        )
+
+        locations = read_map_locations(map_name)
+
+        if "home" not in locations:
+            raise RuntimeError(
+                f"No Home Station is saved for map '{map_name}'. "
+                "Start normal Navigation once, localize in RViz, "
+                "then park robot at Home and click Save Home."
+            )
+
+        old_initializer = getattr(
+            self,
+            "home_init_proc",
+            None,
+        )
+
+        self.stop_process(old_initializer, timeout=2.0)
+
+        command = (
+            "source /opt/ros/jazzy/setup.bash && "
+            f"source {WORKSPACE}/install/setup.bash && "
+            f"exec python3 {HOME_INITIALIZER} "
+            f"--ros-args "
+            f"-p locations_file:={locations_file} "
+            f"-p delay_seconds:={float(delay_seconds):.1f} "
+            f">> {log_file} 2>&1"
+        )
+
+        self.home_init_proc = self.run_shell(command)
 
     def stop_mode(self) -> str:
         with self.lock:
             old_mode = self.mode
             mode_proc = self.mode_proc
             task_proc = self.task_proc
+            home_init_proc = getattr(self, "home_init_proc", None)
 
             self.mode = "idle"
             self.mode_proc = None
             self.task_proc = None
+            self.home_init_proc = None
 
             self.drive_active = False
             self.linear = 0.0
@@ -1487,6 +1567,7 @@ class CommandCenter(Node):
         self.publish_stop()
         self.voice_text_pub.publish(String(data="cancel navigation"))
 
+        self.stop_process(home_init_proc, timeout=2.0)
         self.stop_process(task_proc, timeout=5.0)
         self.stop_process(mode_proc, timeout=12.0)
 
@@ -1499,8 +1580,29 @@ class CommandCenter(Node):
         self,
         mode: str,
         map_name: Optional[str] = None,
+        initialize_home: bool = False,
     ) -> str:
         mode = str(mode).strip().lower()
+
+        if mode == "navigation":
+            requested_map = map_name or self.selected_map
+
+            if not requested_map:
+                raise RuntimeError(
+                    "Select a saved map before starting Navigation Mode."
+                )
+
+            requested_map = self.set_selected_map(requested_map)
+
+            if initialize_home:
+                locations = read_map_locations(requested_map)
+
+                if "home" not in locations:
+                    raise RuntimeError(
+                        f"No Home Station is saved for map '{requested_map}'. "
+                        "Start normal Navigation first, set position in RViz, "
+                        "then click Save Home."
+                    )
 
         if mode not in ("drive", "mapping", "navigation"):
             raise RuntimeError(
@@ -1525,8 +1627,25 @@ class CommandCenter(Node):
             self.mode_log = str(mode_log)
 
         if mode == "navigation":
+            locations_file = (
+                MAP_DIR / "locations" / f"{self.selected_map}.yaml"
+            )
+
             task_log = LOG_DIR / f"named_goals_{stamp}.log"
-            self.start_task_manager(task_log)
+
+            self.start_task_manager(
+                task_log,
+                locations_file,
+            )
+
+            if initialize_home:
+                home_log = LOG_DIR / f"home_init_{stamp}.log"
+
+                self.start_home_initializer(
+                    self.selected_map,
+                    delay_seconds=18.0,
+                    log_file=home_log,
+                )
 
         messages = {
             "drive": (
@@ -1546,10 +1665,17 @@ class CommandCenter(Node):
             with self.lock:
                 selected = self.selected_map
 
+            if initialize_home:
+                return (
+                    f"Navigation Mode is starting with map: {selected}. "
+                    "Saved Home pose will be sent automatically after about "
+                    "18 seconds. Keep robot physically parked at Home Station."
+                )
+
             return (
                 f"Navigation Mode is starting with map: {selected}. "
                 "Wait around 20 seconds for map, AMCL, and Nav2. "
-                "Set 2D Pose Estimate in RViz, then use voice."
+                "Set 2D Pose Estimate in RViz once, then use voice."
             )
 
         return messages[mode]
@@ -1781,6 +1907,9 @@ def api_mode_start():
         message = dashboard.start_mode(
             payload.get("mode", ""),
             map_name=payload.get("map_name"),
+            initialize_home=bool(
+                payload.get("initialize_home", False)
+            ),
         )
 
         return jsonify({
@@ -1965,6 +2094,58 @@ def api_locations_save():
                 f"'{dashboard.selected_map}'."
             ),
             "pose": pose,
+        })
+
+    except Exception as exc:
+        return jsonify({
+            "ok": False,
+            "message": str(exc),
+        }), 400
+
+
+
+
+@app.route("/api/localization/home", methods=["POST"])
+def api_localization_home():
+    if dashboard is None:
+        return jsonify({
+            "ok": False,
+            "message": "Dashboard is starting.",
+        }), 503
+
+    try:
+        payload = request.get_json(silent=True) or {}
+        map_name = dashboard.safe_map_name(
+            payload.get("map_name", dashboard.selected_map)
+        )
+
+        with dashboard.lock:
+            navigation_running = (
+                dashboard.mode == "navigation"
+                and dashboard.mode_proc is not None
+                and dashboard.mode_proc.poll() is None
+            )
+
+        if not navigation_running:
+            raise RuntimeError(
+                "Start Navigation Mode before Initialize from Home."
+            )
+
+        log_name = datetime.now().strftime("%Y%m%d_%H%M%S")
+        home_log = LOG_DIR / f"home_init_manual_{log_name}.log"
+
+        dashboard.start_home_initializer(
+            map_name,
+            delay_seconds=0.5,
+            log_file=home_log,
+        )
+
+        return jsonify({
+            "ok": True,
+            "message": (
+                "Saved Home pose is being sent to AMCL. "
+                "Wait a few seconds for LiDAR alignment."
+            ),
         })
 
     except Exception as exc:
