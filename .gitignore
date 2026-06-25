@@ -70,3 +70,29 @@ id_rsa
 id_ed25519
 credentials*
 secrets*
+
+# Local ROS build and runtime output
+build/
+install/
+log/
+__pycache__/
+*.py[cod]
+
+# Virtual environments and local secrets
+.venv/
+venv/
+.env
+*.pem
+*.key
+*.p12
+
+# Large local AI models and recordings
+*.onnx
+*.pt
+*.bag
+*.db3
+*.mcap
+
+# Editor and operating-system clutter
+.vscode/.browse.VC.db*
+.DS_Store
