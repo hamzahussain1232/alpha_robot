@@ -87,13 +87,13 @@ body{
     radial-gradient(circle at 95% 0,#104d57 0,transparent 28%),
     var(--bg);
 }
-.container{max-width:1380px;margin:auto;padding:24px}
+.container{max-width:1660px;margin:auto;padding:16px}
 .header{
   display:flex;
   justify-content:space-between;
   gap:18px;
   align-items:center;
-  padding:22px 24px;
+  padding:17px 20px;
   border:1px solid var(--line);
   border-radius:22px;
   background:linear-gradient(125deg,rgba(17,42,77,.96),rgba(10,27,47,.96));
@@ -115,13 +115,25 @@ h1{margin:0;font-size:clamp(22px,3vw,33px);letter-spacing:-.6px}
 .owners strong{color:var(--text);font-size:14px}
 .grid{
   display:grid;
-  grid-template-columns:1.15fr .85fr;
-  gap:18px;
-  margin-top:18px;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  margin-top:14px;
+  align-items:start;
 }
-.stack{display:grid;gap:18px}
+
+/* Compact square desktop layout enabled. */
+/*
+  On desktop, both old "stack" containers become invisible layout wrappers.
+  Their cards flow into one compact 2-column grid:
+  Operating Mode | Manual Drive
+  Map Management | Voice Navigation
+  Locations      | System & Safety
+*/
+.grid > .stack{display:contents}
+
 .card{
-  padding:19px;
+  min-width:0;
+  padding:16px;
   border:1px solid var(--line);
   border-radius:18px;
   background:linear-gradient(145deg,var(--card2),var(--card));
@@ -141,8 +153,8 @@ button{
 button:hover{transform:translateY(-1px)}
 button:disabled{opacity:.45;cursor:not-allowed;transform:none}
 .mode{
-  min-height:96px;
-  padding:15px;
+  min-height:88px;
+  padding:12px;
   text-align:left;
   border:1px solid #34547a;
   border-radius:15px;
@@ -220,7 +232,7 @@ input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(66,214,209,.12)}
 .pad{
   display:grid;
   grid-template-columns:repeat(3,1fr);
-  grid-template-rows:repeat(3,56px);
+  grid-template-rows:repeat(3,50px);
   gap:7px;
   max-width:290px;
   margin:auto;
@@ -262,8 +274,13 @@ input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(66,214,209,.12)}
   line-height:1.45;
 }
 footer{padding:18px 4px 4px;text-align:center;color:#7793b3;font-size:12px}
-@media(max-width:960px){
+/*
+  Tablet/mobile: return cards to normal vertical groups so controls remain
+  readable and easy to touch.
+*/
+@media(max-width:1100px){
   .grid{grid-template-columns:1fr}
+  .grid > .stack{display:grid;gap:14px}
   .header{align-items:flex-start;flex-direction:column}
   .owners{text-align:left}
 }
