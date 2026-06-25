@@ -61,7 +61,7 @@ def generate_launch_description():
         default=PathJoinSubstitution([FindPackageShare(package_name), 'config', 'voice_params.yaml']),
     )
     mapping_slam_params_default = PathJoinSubstitution(
-        [FindPackageShare(package_name), 'config', 'mapper_params_sim_stable.yaml']
+        [FindPackageShare(package_name), 'config', 'mapper_params_real_clean.yaml']
     )
     mapping_slam_params = LaunchConfiguration(
         'mapping_slam_params',
@@ -71,7 +71,7 @@ def generate_launch_description():
     enable_detector = LaunchConfiguration('enable_detector', default='false')
     enable_marker_detector = LaunchConfiguration('enable_marker_detector', default='false')
     enable_camera_safety = LaunchConfiguration('enable_camera_safety', default='true')
-    enable_camera = LaunchConfiguration('enable_camera', default='true')
+    enable_camera = LaunchConfiguration('enable_camera', default='false')
     enable_arm_driver = LaunchConfiguration('enable_arm_driver', default='false')
     camera_driver = LaunchConfiguration('camera_driver', default='libcamera')
     camera_video_device = LaunchConfiguration('camera_video_device', default='/dev/video0')
@@ -93,9 +93,9 @@ def generate_launch_description():
     wheel_separation = LaunchConfiguration('wheel_separation', default='0.236')
     wheel_radius = LaunchConfiguration('wheel_radius', default='0.0325')
     encoder_cpr = LaunchConfiguration('encoder_cpr', default='330')
-    nav_max_angular = LaunchConfiguration('nav_max_angular', default='0.60')
-    nav_min_turn_pwm = LaunchConfiguration('nav_min_turn_pwm', default='115')
-    nav_turn_pwm_scale = LaunchConfiguration('nav_turn_pwm_scale', default='0.65')
+    nav_max_angular = LaunchConfiguration('nav_max_angular', default='1.70')
+    nav_min_turn_pwm = LaunchConfiguration('nav_min_turn_pwm', default='210')
+    nav_turn_pwm_scale = LaunchConfiguration('nav_turn_pwm_scale', default='1.0')
     nav_turn_in_place_threshold = LaunchConfiguration('nav_turn_in_place_threshold', default='0.08')
     nav_turn_assist_cmd_w_threshold = LaunchConfiguration(
         'nav_turn_assist_cmd_w_threshold', default='0.10'
@@ -107,7 +107,7 @@ def generate_launch_description():
     lidar_baud = LaunchConfiguration('lidar_baud', default='115200')
     lidar_frame = LaunchConfiguration('lidar_frame', default='laser_frame')
     enable_lidar = LaunchConfiguration('enable_lidar', default='true')
-    enable_teleop = LaunchConfiguration('enable_teleop', default='true')
+    enable_teleop = LaunchConfiguration('enable_teleop', default='false')
     perception_params_sim = LaunchConfiguration(
         'perception_params_sim',
         default=PathJoinSubstitution([FindPackageShare(package_name), 'config', 'perception_params_sim.yaml']),
@@ -622,9 +622,9 @@ def generate_launch_description():
             DeclareLaunchArgument('wheel_separation', default_value='0.236'),
             DeclareLaunchArgument('wheel_radius', default_value='0.0325'),
             DeclareLaunchArgument('encoder_cpr', default_value='330'),
-            DeclareLaunchArgument('nav_max_angular', default_value='0.60'),
+            DeclareLaunchArgument('nav_max_angular', default_value='1.70'),
             DeclareLaunchArgument('nav_min_turn_pwm', default_value='115'),
-            DeclareLaunchArgument('nav_turn_pwm_scale', default_value='0.65'),
+            DeclareLaunchArgument('nav_turn_pwm_scale', default_value='1.0'),
             DeclareLaunchArgument('nav_turn_in_place_threshold', default_value='0.08'),
             DeclareLaunchArgument('nav_turn_assist_cmd_w_threshold', default_value='0.10'),
             DeclareLaunchArgument('nav_turn_assist_min_pwm_delta', default_value='0'),
@@ -632,7 +632,7 @@ def generate_launch_description():
             DeclareLaunchArgument('lidar_baud', default_value='115200'),
             DeclareLaunchArgument('lidar_frame', default_value='laser_frame'),
             DeclareLaunchArgument('enable_lidar', default_value='true'),
-            DeclareLaunchArgument('enable_teleop', default_value='true'),
+            DeclareLaunchArgument('enable_teleop', default_value='false'),
             DeclareLaunchArgument('stack_start_delay', default_value='12.0'),
             DeclareLaunchArgument('enable_voice', default_value='false'),
             DeclareLaunchArgument('voice_use_mic', default_value='false'),
@@ -645,7 +645,7 @@ def generate_launch_description():
             DeclareLaunchArgument('enable_detector', default_value='false'),
             DeclareLaunchArgument('enable_marker_detector', default_value='false'),
             DeclareLaunchArgument('enable_camera_safety', default_value='true'),
-            DeclareLaunchArgument('enable_camera', default_value='true'),
+            DeclareLaunchArgument('enable_camera', default_value='false'),
             DeclareLaunchArgument(
                 'enable_arm_driver',
                 default_value='false',

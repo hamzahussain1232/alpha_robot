@@ -1,0 +1,15 @@
+locations:
+  home:
+    x: -1.010
+    y: -0.148
+    yaw_deg: -71.18
+
+  kitchen:
+    x: -0.124
+    y: -0.299
+    yaw_deg: 26.48
+
+  drawing_room:
+    x: -0.870
+    y: -0.665
+    yaw_deg: -75.01

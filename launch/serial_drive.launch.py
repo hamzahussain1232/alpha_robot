@@ -38,7 +38,7 @@ def generate_launch_description():
     timeout_sec = LaunchConfiguration('timeout_sec', default='0.5')
     serial_boot_wait_sec = LaunchConfiguration('serial_boot_wait_sec', default='2.0')
     cmd_vel_topic = LaunchConfiguration('cmd_vel_topic', default='/diff_cont/cmd_vel')
-    debug_serial = LaunchConfiguration('debug_serial', default='true')
+    debug_serial = LaunchConfiguration('debug_serial', default='false')
 
     direct_cmd_vel = LaunchConfiguration('direct_cmd_vel', default='false')
 
@@ -90,7 +90,7 @@ def generate_launch_description():
             'straight_trim_max_cmd_w': straight_trim_max_cmd_w,
             'timeout_sec': timeout_sec,
             'serial_boot_wait_sec': serial_boot_wait_sec,
-            'enable_fallback_cmd_vel': True,
+            'enable_fallback_cmd_vel': False,
             'debug': debug_serial,
         }],
         condition=UnlessCondition(direct_cmd_vel),
@@ -148,7 +148,7 @@ def generate_launch_description():
         DeclareLaunchArgument('odom_linear_scale', default_value='1.0'),
         DeclareLaunchArgument('odom_angular_scale', default_value='0.735'),
         DeclareLaunchArgument('max_linear', default_value='0.16'),
-        DeclareLaunchArgument('max_angular', default_value='0.60'),
+        DeclareLaunchArgument('max_angular', default_value='1.70'),
         DeclareLaunchArgument('max_pwm', default_value='255'),
         DeclareLaunchArgument('min_nonzero_pwm', default_value='115'),
         DeclareLaunchArgument('min_turn_pwm', default_value='115'),
@@ -157,9 +157,9 @@ def generate_launch_description():
         DeclareLaunchArgument('left_reverse_pwm_scale', default_value='1.0'),
         DeclareLaunchArgument('right_forward_pwm_scale', default_value='1.0'),
         DeclareLaunchArgument('right_reverse_pwm_scale', default_value='1.0'),
-        DeclareLaunchArgument('turn_pwm_scale', default_value='0.65'),
-        DeclareLaunchArgument('turn_in_place_threshold', default_value='0.05'),
-        DeclareLaunchArgument('turn_assist_cmd_w_threshold', default_value='0.0'),
+        DeclareLaunchArgument('turn_pwm_scale', default_value='1.0'),
+        DeclareLaunchArgument('turn_in_place_threshold', default_value='0.08'),
+        DeclareLaunchArgument('turn_assist_cmd_w_threshold', default_value='0.10'),
         DeclareLaunchArgument('turn_assist_min_pwm_delta', default_value='0'),
         DeclareLaunchArgument('straight_trim_pwm', default_value='8'),
         DeclareLaunchArgument('straight_trim_min_cmd_vel', default_value='0.05'),
