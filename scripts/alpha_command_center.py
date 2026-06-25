@@ -261,6 +261,12 @@ footer{padding:18px 4px 4px;text-align:center;color:#7793b3;font-size:12px}
   .container{padding:13px}
   .mode-grid,.two,.drive-layout{grid-template-columns:1fr}
 }
+
+button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  filter: grayscale(0.35);
+}
 </style>
 </head>
 <body>
@@ -315,6 +321,14 @@ footer{padding:18px 4px 4px;text-align:center;color:#7793b3;font-size:12px}
 
             <div class="actions" style="margin-top:10px">
               <button class="primary" onclick="startNavigation()">Start Navigation</button>
+
+              <button class="secondary"
+                id="startFromHomeButton"
+                disabled
+                title="This becomes active in Part 4.">
+                Start From Home
+              </button>
+
               <button class="secondary" onclick="loadMaps()">Refresh Maps</button>
             </div>
           </div>
@@ -410,6 +424,71 @@ footer{padding:18px 4px 4px;text-align:center;color:#7793b3;font-size:12px}
         </div>
 
         <div id="taskStatus" class="statusbar">No navigation task reported yet.</div>
+      </article>
+
+
+      <article class="card" id="mapLocationsCard">
+        <h2>Map Locations & Home Station</h2>
+
+        <p class="help">
+          Every saved map will have separate places such as Home, Kitchen,
+          Drawing Room, Bedroom, and custom locations.
+        </p>
+
+        <div id="locationMapStatus" class="statusbar">
+          Select a map in Navigation Mode. Location controls activate in Part 3.
+        </div>
+
+        <div style="margin-top:13px">
+          <label class="label">Location name</label>
+          <input
+            id="locationName"
+            maxlength="48"
+            disabled
+            placeholder="Example: kitchen, bedroom, dining room">
+        </div>
+
+        <div class="actions">
+          <button
+            id="saveCurrentLocationButton"
+            class="primary"
+            disabled>
+            Save Current Robot Position
+          </button>
+
+          <button
+            id="initializeHomeButton"
+            class="secondary"
+            disabled>
+            Initialize from Home
+          </button>
+        </div>
+
+        <p class="help" style="margin-top:14px;margin-bottom:8px">
+          Quick save location
+        </p>
+
+        <div class="quick">
+          <button id="saveHomeButton" disabled>Save Home</button>
+          <button id="saveKitchenButton" disabled>Save Kitchen</button>
+          <button id="saveDrawingRoomButton" disabled>Save Drawing Room</button>
+          <button id="saveBedroomButton" disabled>Save Bedroom</button>
+        </div>
+
+        <div id="savedLocations" class="statusbar">
+          No locations loaded yet. Part 3 will connect this selected-map list.
+        </div>
+
+        <div class="notice">
+          <strong>Home Station rule:</strong> later, Start From Home will work
+          only when the robot is physically parked at the same fixed Home
+          position and facing nearly the same direction.
+        </div>
+
+        <p class="help" style="margin-top:12px">
+          Dashboard interface added successfully. Part 3 activates saving and
+          reading Home, Kitchen, Drawing Room, Bedroom, and custom locations.
+        </p>
       </article>
 
       <article class="card">
