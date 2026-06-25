@@ -821,7 +821,7 @@ class CommandCenter(Node):
         self.mode_log = ""
 
         self.selected_map_file = MAP_DIR / ".selected_navigation_map"
-        self.selected_map = self.load_selected_map()""
+        self.selected_map = self.load_selected_map()
 
         self.estop = False
         self.task_status: Dict[str, Any] = {}
