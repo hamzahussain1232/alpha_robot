@@ -301,11 +301,23 @@ footer{padding:18px 4px 4px;text-align:center;color:#7793b3;font-size:12px}
             <small>LiDAR + SLAM Toolbox</small>
           </button>
 
-          <button class="mode" id="navigationMode" onclick="startMode('navigation')">
+          <div class="mode" id="navigationMode" style="cursor:default">
             <span class="icon">⌖</span>
-            Start Navigation
-            <small>AMCL + Nav2 + Voice</small>
-          </button>
+            Navigation Mode
+            <small>Choose a saved map, then start AMCL + Nav2 + Voice.</small>
+
+            <div style="margin-top:10px">
+              <label class="label">Navigation map</label>
+              <select id="navigationMap"
+                style="width:100%;padding:10px;border:1px solid #365778;border-radius:10px;background:#071727;color:#f1f7ff;font:inherit">
+              </select>
+            </div>
+
+            <div class="actions" style="margin-top:10px">
+              <button class="primary" onclick="startNavigation()">Start Navigation</button>
+              <button class="secondary" onclick="loadMaps()">Refresh Maps</button>
+            </div>
+          </div>
         </div>
 
         <div class="actions">
@@ -490,6 +502,70 @@ async function startMode(mode) {
   }
 }
 
+async function startNavigation() {
+  try {
+    const selectedMap = document.getElementById('navigationMap').value;
+
+    if (!selectedMap) {
+      throw new Error('Select a saved map before starting Navigation Mode.');
+    }
+
+    showStatus('Starting navigation using ' + selectedMap + '…', 'warn');
+
+    const result = await api('/api/mode/start', {
+      mode: 'navigation',
+      map_name: selectedMap
+    });
+
+    showStatus(result.message, 'good');
+  } catch (error) {
+    showStatus(error.message, 'bad');
+  }
+}
+
+async function loadMaps() {
+  try {
+    const response = await fetch('/api/maps');
+    const data = await response.json();
+
+    if (!response.ok || data.ok === false) {
+      throw new Error(data.message || 'Could not load saved maps.');
+    }
+
+    const select = document.getElementById('navigationMap');
+    const previous = select.value;
+
+    select.innerHTML = '';
+
+    if (!data.maps || data.maps.length === 0) {
+      const option = document.createElement('option');
+      option.value = '';
+      option.textContent = 'No saved maps found';
+      select.appendChild(option);
+      return;
+    }
+
+    data.maps.forEach((mapName) => {
+      const option = document.createElement('option');
+      option.value = mapName;
+      option.textContent = mapName;
+      select.appendChild(option);
+    });
+
+    const chosen =
+      data.selected_map ||
+      previous ||
+      'home_map_final';
+
+    if (data.maps.includes(chosen)) {
+      select.value = chosen;
+    }
+
+  } catch (error) {
+    showStatus(error.message, 'bad');
+  }
+}
+
 async function stopMode() {
   try {
     const result = await api('/api/mode/stop', {});
@@ -560,7 +636,14 @@ async function saveMap() {
     showStatus('Saving current map…', 'warn');
 
     const result = await api('/api/map/save', {name});
-    showStatus(result.message, 'good');
+
+    await loadMaps();
+
+    if (result.map_name) {
+      document.getElementById('navigationMap').value = result.map_name;
+    }
+
+    showStatus(result.message + ' Selected for next navigation.', 'good');
   } catch (error) {
     showStatus(error.message, 'bad');
   }
@@ -713,6 +796,7 @@ async function refresh() {
 
 setInterval(refresh, 1000);
 refresh();
+loadMaps();
 </script>
 </body>
 </html>
@@ -735,6 +819,9 @@ class CommandCenter(Node):
         self.mode_proc: Optional[subprocess.Popen] = None
         self.task_proc: Optional[subprocess.Popen] = None
         self.mode_log = ""
+
+        self.selected_map_file = MAP_DIR / ".selected_navigation_map"
+        self.selected_map = self.load_selected_map()""
 
         self.estop = False
         self.task_status: Dict[str, Any] = {}
@@ -978,7 +1065,57 @@ class CommandCenter(Node):
         except ProcessLookupError:
             return
 
-    def mode_command(self, mode: str, log_file: Path) -> str:
+    def available_maps(self):
+        maps = []
+
+        for yaml_file in sorted(MAP_DIR.glob("*.yaml")):
+            pgm_file = yaml_file.with_suffix(".pgm")
+
+            if pgm_file.is_file():
+                maps.append(yaml_file.stem)
+
+        return maps
+
+    def load_selected_map(self) -> str:
+        maps = self.available_maps()
+
+        if not maps:
+            return ""
+
+        try:
+            saved = self.selected_map_file.read_text().strip()
+
+            if saved in maps:
+                return saved
+        except Exception:
+            pass
+
+        if "home_map_final" in maps:
+            return "home_map_final"
+
+        return maps[0]
+
+    def set_selected_map(self, map_name: str) -> str:
+        clean = self.safe_map_name(map_name)
+
+        if clean not in self.available_maps():
+            raise RuntimeError(
+                f"Saved map not found: {clean}.yaml"
+            )
+
+        self.selected_map_file.write_text(clean + "\n")
+
+        with self.lock:
+            self.selected_map = clean
+
+        return clean
+
+    def mode_command(
+        self,
+        mode: str,
+        log_file: Path,
+        map_name: Optional[str] = None,
+    ) -> str:
         setup = (
             "source /opt/ros/jazzy/setup.bash && "
             f"source {WORKSPACE}/install/setup.bash && "
@@ -1023,7 +1160,15 @@ class CommandCenter(Node):
             )
 
         elif mode == "navigation":
-            map_yaml = MAP_DIR / "home_map_final.yaml"
+            chosen_map = map_name or self.selected_map
+
+            if not chosen_map:
+                raise RuntimeError(
+                    "No saved map is available. Create and save a map first."
+                )
+
+            chosen_map = self.set_selected_map(chosen_map)
+            map_yaml = MAP_DIR / f"{chosen_map}.yaml"
 
             if not map_yaml.is_file():
                 raise RuntimeError(
@@ -1092,7 +1237,11 @@ class CommandCenter(Node):
 
         return f"{old_mode.title()} Mode stopped safely."
 
-    def start_mode(self, mode: str) -> str:
+    def start_mode(
+        self,
+        mode: str,
+        map_name: Optional[str] = None,
+    ) -> str:
         mode = str(mode).strip().lower()
 
         if mode not in ("drive", "mapping", "navigation"):
@@ -1105,7 +1254,11 @@ class CommandCenter(Node):
         stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         mode_log = LOG_DIR / f"{mode}_{stamp}.log"
 
-        command = self.mode_command(mode, mode_log)
+        command = self.mode_command(
+            mode,
+            mode_log,
+            map_name=map_name,
+        )
         process = self.run_shell(command)
 
         with self.lock:
@@ -1130,6 +1283,16 @@ class CommandCenter(Node):
                 "AMCL, and Nav2. Set 2D Pose Estimate in RViz, then use voice."
             ),
         }
+
+        if mode == "navigation":
+            with self.lock:
+                selected = self.selected_map
+
+            return (
+                f"Navigation Mode is starting with map: {selected}. "
+                "Wait around 20 seconds for map, AMCL, and Nav2. "
+                "Set 2D Pose Estimate in RViz, then use voice."
+            )
 
         return messages[mode]
 
@@ -1193,6 +1356,8 @@ class CommandCenter(Node):
             raise RuntimeError(
                 f"Map save failed: {detail[-350:]}"
             )
+
+        self.set_selected_map(map_name)
 
         return (
             f"Map saved successfully: {yaml_file.name} and {pgm_file.name}"
@@ -1321,6 +1486,7 @@ class CommandCenter(Node):
 
             return {
                 "mode": self.mode,
+                "selected_map": self.selected_map,
                 "mode_process_running": mode_running,
                 "task_process_running": task_running,
                 "mode_log": self.mode_log,
@@ -1353,7 +1519,11 @@ def api_mode_start():
 
     try:
         payload = request.get_json(silent=True) or {}
-        message = dashboard.start_mode(payload.get("mode", ""))
+
+        message = dashboard.start_mode(
+            payload.get("mode", ""),
+            map_name=payload.get("map_name"),
+        )
 
         return jsonify({
             "ok": True,
@@ -1452,6 +1622,7 @@ def api_map_save():
         return jsonify({
             "ok": True,
             "message": message,
+            "map_name": dashboard.selected_map,
         })
 
     except Exception as exc:
@@ -1459,6 +1630,21 @@ def api_map_save():
             "ok": False,
             "message": str(exc),
         }), 400
+
+
+@app.route("/api/maps")
+def api_maps():
+    if dashboard is None:
+        return jsonify({
+            "ok": False,
+            "message": "Dashboard is starting.",
+        }), 503
+
+    return jsonify({
+        "ok": True,
+        "maps": dashboard.available_maps(),
+        "selected_map": dashboard.selected_map,
+    })
 
 
 def main() -> None:
