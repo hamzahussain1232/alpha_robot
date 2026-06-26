@@ -597,6 +597,9 @@ button:disabled {
         <div class="actions">
           <button class="danger" onclick="setEstop(true)">Emergency Stop</button>
           <button class="safe" onclick="setEstop(false)">Release E-Stop</button>
+          <button class="secondary" onclick="cleanupRobotStack()">
+            Clean AlphaRobot ROS Stack
+          </button>
         </div>
 
         <div id="estopStatus" class="statusbar">Emergency stop status checking…</div>
@@ -967,6 +970,33 @@ async function initializeFromHome() {
     });
 
     showStatus(result.message, 'good');
+
+  } catch (error) {
+    showStatus(error.message, 'bad');
+  }
+}
+
+
+async function cleanupRobotStack() {
+  const confirmed = window.confirm(
+    'This will stop all AlphaRobot ROS background processes, including mapping, LiDAR, motor bridge, SLAM, and navigation nodes. The dashboard will remain running. Continue?'
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    showStatus(
+      'Cleaning stale AlphaRobot ROS processes. Please wait…',
+      'warn'
+    );
+
+    const result = await api('/api/robot/cleanup', {});
+
+    showStatus(result.message, 'good');
+
+    setTimeout(refresh, 800);
 
   } catch (error) {
     showStatus(error.message, 'bad');
@@ -1617,6 +1647,61 @@ class CommandCenter(Node):
 
         self.home_init_proc = self.run_shell(command)
 
+
+    def cleanup_alpharobot_ros_stack(self) -> str:
+        """
+        Stops only known AlphaRobot ROS processes.
+
+        Dashboard remains alive. This is intentionally not a general
+        "kill all Pi processes" command.
+        """
+        self.stop_mode()
+        self.publish_stop()
+
+        patterns = (
+            "ros2 launch articubot_one workflow.launch.py",
+            "ros2 launch articubot_one mapping_real.launch.py",
+            "ros2 launch articubot_one mapping_final.launch.py",
+            "online_sync_launch.py",
+            "online_async_launch.py",
+            "/opt/ros/jazzy/lib/slam_toolbox/sync_slam_toolbox_node",
+            "/opt/ros/jazzy/lib/slam_toolbox/async_slam_toolbox_node",
+            "serial_diffdrive_node.py",
+            "sllidar_node",
+            "robot_state_publisher",
+            "twist_mux",
+            "keyboard_bridge",
+            "per_map_goal_task_manager.py",
+            "home_station_initializer.py",
+        )
+
+        stopped = []
+
+        for signal_name in ("-INT", "-TERM"):
+            for pattern in patterns:
+                result = subprocess.run(
+                    ["pkill", signal_name, "-f", pattern],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+
+                if result.returncode == 0:
+                    stopped.append(pattern)
+
+            if signal_name == "-INT":
+                time.sleep(2.0)
+
+        self.publish_stop()
+
+        unique_stopped = len(set(stopped))
+
+        return (
+            "AlphaRobot ROS cleanup complete. "
+            f"Cleared {unique_stopped} known robot process group(s). "
+            "Dashboard is still running. Start Drive, Mapping, or Navigation again when ready."
+        )
+
     def stop_mode(self) -> str:
         with self.lock:
             old_mode = self.mode
@@ -2006,6 +2091,30 @@ def api_mode_stop():
         "ok": True,
         "message": dashboard.stop_mode(),
     })
+
+
+
+@app.route("/api/robot/cleanup", methods=["POST"])
+def api_robot_cleanup():
+    if dashboard is None:
+        return jsonify({
+            "ok": False,
+            "message": "Dashboard is starting.",
+        }), 503
+
+    try:
+        message = dashboard.cleanup_alpharobot_ros_stack()
+
+        return jsonify({
+            "ok": True,
+            "message": message,
+        })
+
+    except Exception as exc:
+        return jsonify({
+            "ok": False,
+            "message": f"Cleanup failed: {exc}",
+        }), 500
 
 
 @app.route("/api/drive", methods=["POST"])
